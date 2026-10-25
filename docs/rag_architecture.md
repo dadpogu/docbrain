@@ -2,6 +2,19 @@
 
 A unified, tri-focal retrieval architecture designed for high-precision regulatory compliance, risk analysis, and operational workflow generation.
 
+## Implementation baseline
+
+**Start with the [implementation plan](./implementation_plan.md).** It defines phased delivery, authoritative contracts, acceptance gates, and open deployment assumptions. The diagrams below describe the full target; the current Python modules implement only parts of it.
+
+- **Hosted dependencies:** LiteLLM, Docling or LiteParse, Qdrant, and Memgraph. Integrations are replaceable at tested adapter boundaries; switching storage still requires data migration.
+- **In-repository execution:** LangChain tools/model composition and LangGraph ingestion, answering, and approval workflows. The retrieval broker and compliance agents are part of DocBrain, not separate products to procure.
+- **Application state:** proposed PostgreSQL registry for immutable versions, publication manifests, jobs, audit records, and durable workflow checkpoints; original/derived files live in artifact storage.
+- **Release order:** cited vector Q&A → grounded graph relationships → hierarchical/global retrieval → approval-gated change impact and procedures. Advanced retrieval must beat the baseline on its target query classes.
+- **Consistency:** publish validated builds through an atomic registry manifest update. There is no distributed transaction across Qdrant and Memgraph; retries, reconciliation, and snapshot-scoped reads are required.
+- **Trust:** access checks apply to all stores and derived summaries. Extracted law, inferred interpretations, proposed controls, and approved policy remain distinct. Citation presence alone does not prove claim support.
+
+The [project structure](./project_structure.md) distinguishes existing files from planned modules. [Deployment guidance](./rag_deployment.md) separates the hosted-service target from legacy self-hosting examples.
+
 ---
 
 ## 1. System Vision & The Core Idea
@@ -99,7 +112,7 @@ graph LR
 
 ## 3. Canonical Data Model & Unified Grounding
 
-To unify the three stores and eliminate isolated data silos, every entity, summary node, and text chunk references a deterministic canonical identifier schema implemented in [`models.py`](../src/models.py):
+To unify the three stores, every entity, summary node, and text chunk needs deterministic identity and source provenance. [`models.py`](../src/models.py) contains the initial models. The following is the **legacy prototype naming scheme**, not the production identity contract:
 
 ```
 Canonical Identifier Schema:
@@ -109,6 +122,8 @@ Canonical Identifier Schema:
   KG Entity:   entity_id = "ent_{slug(normalized_name)}"
   KG Relation: rel_id    = "rel_{source_id}_{type}_{target_id}"
 ```
+
+Implementation adds tenant-scoped document identity, immutable source versions, pipeline build IDs, and versioned assertions as specified in the [plan](./implementation_plan.md#4-contracts-that-must-precede-indexing). Source URLs and normalized entity names are aliases, not sufficient identities. Qdrant point IDs are deterministic UUIDs mapped from canonical IDs; readable strings remain in payloads. Cross-document summary roots belong to a corpus snapshot rather than one document.
 
 ### 3.1 Provenance Linkage Across Stores
 - **Vector Store (Chunks):** Payload stores `{doc_id, chunk_id, section_path, page_numbers, entity_ids, content_hash}`.

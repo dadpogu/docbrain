@@ -2,6 +2,10 @@
 
 A technical guide for autonomous agents to perform layout-aware semantic chunking, dual-text indexing, hierarchical RAPTOR tree building, and multi-store schema encoding.
 
+**Implementation status:** design guidance. The [implementation plan](./implementation_plan.md) supersedes prototype IDs, fixed vector dimensions, and graph DDL sketches below. Use versioned builds, deterministic Qdrant UUID point IDs, Memgraph-specific tested migrations, and manifest-gated publication. Cross-store atomic deletion is not available.
+
+**Evidence rule:** normalized retrieval text may clarify source context but must not invent obligations or technologies. Generated interpretations and proposed controls are separate records. Embedding profiles and source/build identities are mandatory; sparse retrieval improves lexical recall but cannot guarantee perfect recall.
+
 **Architecture Reference:** [rag_architecture.md](./rag_architecture.md)  
 **Upstream Inputs:** [rag_parse.md](./rag_parse.md) (Parsed & Normalized Text) & [rag_extract.md](./rag_extract.md) (Graph Entities)  
 **Downstream Retrieval:** [rag_retrieve.md](./rag_retrieve.md) (Broker & Fusion)
@@ -66,18 +70,18 @@ Regulatory compliance RAG faces two conflicting demands:
 {
   "doc_id": "doc_iso27001_2022",
   "chunk_id": "doc_iso27001_2022#c0018",
-  "dense_text_for_embedding": "System administrators MUST authenticate using multi-factor authentication with FIDO2 hardware tokens...",
+  "dense_text_for_embedding": "Authentication information: allocation and management shall be controlled by an established management process...",
   "verbatim_source_text": "Allocation and management of authentication information shall be controlled by an established management process...",
   "section_path": "Clause 5: Information security controls > 5.17 Authentication information",
   "page_numbers": [18],
-  "entity_ids": ["ent_iso27001", "ent_mfa", "ent_fido2"],
+  "entity_ids": ["ent_iso27001"],
   "content_hash": "b2c4e6..."
 }
 ```
 
 ### 2.3 Hybrid Embeddings: Dense + Sparse
 - **Dense Vectors:** 1536-dimensional or 1024-dimensional semantic embeddings (Cosine distance).
-- **Sparse Vectors:** Lexical BM25 or SPLADE token weights to guarantee 100% recall on specific clause numbers (`"5.17"`), acronyms (`"FIDO2"`), and defined terms.
+- **Sparse Vectors:** Lexical BM25 or SPLADE token weights improve retrieval of specific clause numbers (`"5.17"`), acronyms (`"FIDO2"`), and defined terms. Evaluate tokenizer behavior and add an exact clause-key lookup; no embedding method guarantees 100% recall.
 
 ---
 
@@ -183,10 +187,9 @@ VECTOR_INDEX   entity_vector_idx   ON (e:Entity) (e.embedding) [Metric: Cosine, 
 
 ### 5.1 Differential Ingestion & Hash Fingerprinting
 - Ingestion worker queries stored hashes by `doc_id`.
-- Chunks with matching SHA-256 hashes bypass embedding generation, RAPTOR re-clustering, and entity extraction, reducing re-indexing costs by over 80%.
+- Reuse content computations only when content and parser/chunker/model/prompt/schema profiles match. Preserve new version-specific provenance and invalidate dependent summaries. Measure cost savings; matching text alone does not justify skipping every downstream stage.
 
-### 5.2 Atomic Cascade Invalidation
-When a document is modified or deleted:
-1. **Vector Store:** Purges chunks from `rag_chunks` and nodes from `rag_semantic_layer` matching `doc_id == target_doc_id`.
-2. **Knowledge Graph:** Disassociates `target_doc_id` and corresponding `chunk_id` entries from node/edge provenance properties. Triggers orphan sweep to delete nodes with zero remaining provenance.
-3. **Cache Eviction:** Evicts entries from the L1 Semantic Query Cache within cosine similarity $\epsilon < 0.05$ of the invalidated document.
+### 5.2 Publication, Invalidation, and Retention
+When a document changes, create an immutable build and publish it only after required stages validate; retain the previous version for authorized historical queries. The registry manifest defines visibility across Qdrant and Memgraph.
+
+Deletion first tombstones registry visibility and invalidates dependent summaries, graph assertions, and cache entries by explicit dependency IDs. Physical cleanup is retryable and follows retention/erasure policy. A similarity threshold is not a correct cache-invalidation rule. See the [publication protocol](./implementation_plan.md#visibility-without-a-distributed-transaction).

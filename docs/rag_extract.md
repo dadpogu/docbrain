@@ -2,9 +2,13 @@
 
 A comprehensive guide for autonomous agents to extract typed entities, construct multi-tier regulatory knowledge graphs, derive risks and controls, and manage audit-safe evolution.
 
-**Architecture Reference:** [rag_architecture.md](./docs/rag_architecture.md)  
-**Upstream Input:** [rag_parse.md](./docs/rag_parse.md) (Parsed & Normalized Assertions)  
-**Downstream Storage & Retrieval:** [rag_encode.md](./docs/rag_encode.md) & [rag_retrieve.md](./docs/rag_retrieve.md)
+**Implementation status:** target domain model, not the ontology currently implemented by `graph_engine.py`. The [implementation plan](./implementation_plan.md) governs versioned assertions, access scope, publication, and review. Use hosted **Memgraph** with tested Bolt/Cypher compatibility; Neo4j APOC/GDS calls are not portable assumptions. Leiden requires a verified scoped MAGE capability or an offline snapshot job.
+
+**Interpretation boundary:** examples are synthetic, not verified mappings to ISO/NIST requirements. Extract source requirements separately from inferred risks and proposed controls. A control becomes approved organizational policy only after review. Slugs are aliases; tenant, entity type, source context, and resolution decisions determine identity.
+
+**Architecture Reference:** [rag_architecture.md](./rag_architecture.md)  
+**Upstream Input:** [rag_parse.md](./rag_parse.md) (Parsed & Normalized Assertions)  
+**Downstream Storage & Retrieval:** [rag_encode.md](./rag_encode.md) & [rag_retrieve.md](./rag_retrieve.md)
 
 ---
 
@@ -31,7 +35,7 @@ graph TD
 
 ### 1.1 The Decoupling Invariant
 > [!IMPORTANT]
-> **Operational procedures and controls must NEVER link directly to raw document clauses.**
+> **Operational procedures and controls depend on approved concepts/requirements, not raw clause numbering.** Direct source-provenance links remain allowed for audit; they do not replace the dependency model.
 > - Multiple regulatory clauses (e.g., ISO 27001 A.5.17 and NIST CSF PR.AA-02) map to the **same** underlying Concept (`MFA_Enforcement`).
 > - Controls satisfy Requirements; Operational Procedures execute Controls.
 > - When a standard updates wording or clause numbers, **only the Document $\to$ Concept mapping updates**. Downstream risks, controls, and workflows remain stable until an impact assessment confirms semantic change.

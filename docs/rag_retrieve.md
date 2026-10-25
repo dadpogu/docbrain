@@ -2,6 +2,10 @@
 
 A comprehensive technical guide for autonomous agents to route incoming compliance queries, retrieve across tri-focal representations, fuse disparate scores, build structured evidence bundles, and execute Corrective RAG (CRAG).
 
+**Implementation status:** target behavior, not an end-to-end implemented broker. The [implementation plan](./implementation_plan.md) governs API contracts, authorization, manifest/version selection, score semantics, and evaluation. LangChain tools and LangGraph answering/review workflows live in this repository. Hosted Memgraph supplies graph storage; it does not own agent execution.
+
+**Workflow limits:** initially allow at most two corrective retrieval rounds and one answer-repair round within a total budget. Return partial/insufficient evidence explicitly. Automatic web-search fallback is disabled; the older diagram below shows a possible future opt-in connector. Citation existence and source support are separate checks, and unchecked streamed text must not be labelled verified.
+
 **Architecture Reference:** [rag_architecture.md](./rag_architecture.md)  
 **Upstream Storage:** [rag_encode.md](./rag_encode.md) (Vector & RAPTOR) & [rag_extract.md](./rag_extract.md) (Knowledge Graph)
 
@@ -39,7 +43,7 @@ flowchart TD
 **Agent Role:** `QueryRouter`  
 **Reference Code:** [`router.py`](../src/router.py)
 
-Querying all three stores blindly incurs a 3x latency penalty, unnecessary token costs, and noisy context. The router applies a two-tier evaluation strategy:
+Querying all three stores increases work and can add noisy context; parallel dispatch does not inherently triple latency. Measure end-to-end latency and cost. The router applies a two-tier evaluation strategy:
 
 1. **Tier 1 (Sub-millisecond Rule Matcher):** Evaluates regex heuristics for obvious patterns (e.g., *"summarize"*, *"main themes"* $\to$ `THEMATIC_SUMMARY`; *"how is X related to Y"* $\to$ `MULTI_HOP_RELATIONAL`; *"section 4.2"*, *"clause"* $\to$ `FACTUAL_LOOKUP`).
 2. **Tier 2 (Structured LLM Classifier):** Complex queries are dispatched to an LLM router returning a structured intent enum with confidence scores.
@@ -64,7 +68,7 @@ Executes dense vector search (semantic similarity) and sparse lexical search (BM
 **Reference Code:** [`semantic_tree.py`](../src/semantic_tree.py)
 1. Query matches high-level root nodes (Level 2/3).
 2. The broker collects `leaf_chunk_ids` from matched summary roots.
-3. Restricts Level 0 chunk search strictly to candidate IDs, **pruning over 95% of irrelevant chunks** before vector calculation.
+3. Restricts Level 0 chunk search to candidate IDs within the authorized manifest. Measure recall against unrestricted retrieval; allow a bounded fallback when summary pruning misses evidence.
 
 ### 3.3 Knowledge Graph Traversal
 Executes multi-hop Cypher queries to extract connected paths between queried entities:
@@ -95,7 +99,7 @@ $$W\_RRF(d \in D) = \sum_{m \in M} w_m \cdot \frac{1}{k + r_m(d)}$$
 - $r_m(d)$ is the 1-indexed rank position of item $d$ in store $m$.
 
 ### 4.3 Cross-Encoder Re-ranking & Token Budgeting
-- The top 25 fused candidates are evaluated by a **Cross-Encoder Re-ranker**, producing calibrated $[0.0 - 1.0]$ relevance scores.
+- The top candidates may be evaluated by a **Cross-Encoder Re-ranker**. Record provider score semantics; raw scores and normalized RRF values are not calibrated probabilities. Tune thresholds on held-out data, not a universal confidence constant.
 - Candidates undergo Maximal Marginal Relevance (MMR) deduplication.
 - Content is packaged into the final Evidence Bundle adhering strictly to the token budget (default: 3,500 tokens).
 
@@ -195,12 +199,8 @@ stateDiagram-v2
 }
 ```
 
-### 7.2 Latency Budget Breakdown
+### 7.2 Measured Latency and Cost Budgets
 
-| Operation Stage | Target SLA | Description |
-| :--- | :--- | :--- |
-| **Intent Classification** | $\le 15\text{ ms}$ | Heuristic check ($\le 1\text{ ms}$) or fast LLM router. |
-| **Parallel Store Retrieval** | $\le 45\text{ ms}$ | Concurrent queries against Vector Store, Semantic Layer, and Graph. |
-| **Grounding Expansion & Fusion** | $\le 10\text{ ms}$ | ID resolution, W-RRF scoring, candidate pooling. |
-| **Cross-Encoder Re-ranking** | $\le 65\text{ ms}$ | Batch cross-attention re-scoring over top 25 candidates. |
-| **Total Broker Latency** | **$\le 160\text{ ms}$** | Generates verified Evidence Bundle ready for generation. |
+The earlier 160 ms broker estimate was not benchmarked and did not account reliably for hosted model calls. Instrument routing, embeddings, per-store search, grounding, reranking, synthesis, and verification separately.
+
+Use the [plan's provisional release budgets](./implementation_plan.md#8-evaluation-and-release-criteria): p95 under 3 seconds for evidence retrieval and under 20 seconds for a normal verified answer, subject to validation at a declared corpus size, concurrency, region, and model profile. Corrective rounds have a separate bounded budget. Publish measured p50/p95, token usage, and cost; do not present these provisional targets as existing SLAs.

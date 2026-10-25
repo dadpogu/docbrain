@@ -2,6 +2,10 @@
 
 A detailed engineering guide for autonomous agents to ingest raw regulatory documents, preserve structural hierarchy, unroll complex formats, and engineer deterministic semantic assertions.
 
+**Implementation status:** design guidance, not an implemented parser. The [implementation plan](./implementation_plan.md) governs contracts and delivery. Benchmark hosted Docling and LiteParse behind one canonical document contract; retain original parser output and profile identity. Import existing Markdown with section/text-span provenance when raw files are unavailable, without fabricated page coordinates.
+
+**Source fidelity rule:** normalization must not strengthen an obligation, invent a threshold, or resolve an ambiguous actor without evidence. Separate verbatim text from generated interpretation, preserve uncertain references, and quarantine low-confidence OCR of numbers/negation. Examples below are synthetic illustrations, not verified statements of a named standard.
+
 **Architecture Reference:** [rag_architecture.md](./rag_architecture.md)  
 **Next Stage:** [rag_extract.md](./rag_extract.md) (Knowledge Extraction) & [rag_encode.md](./rag_encode.md) (Embedding & Indexing)
 
@@ -98,11 +102,13 @@ Tables and bulleted lists lose their relational context when chunked naively. Ag
 
 **Agent Normalized Assertions:**
 ```markdown
-- Standard users MUST authenticate using multi-factor authentication consisting of a password and a one-time password (OTP).
-- Standard user sessions MUST be terminated after a maximum of 30 minutes of inactivity.
-- System administrators MUST authenticate using multi-factor authentication consisting of a FIDO2 hardware token.
-- System administrator sessions MUST be terminated after a maximum of 15 minutes of inactivity.
+- Standard User: authentication factor = Password + OTP.
+- Standard User: maximum session inactivity = 30 minutes.
+- System Administrator: authentication factor = FIDO2 Hardware Token.
+- System Administrator: maximum session inactivity = 15 minutes.
 ```
+
+The table alone does not establish normative modality or the required action on expiry. Inherit those only from an explicitly linked governing clause; otherwise record them as unknown. Retain the row/header cell references for each assertion.
 
 ### 3.2 Semantic De-Anonymization & Disambiguation
 - **Pronoun & Ellipsis Resolution:** Replace vague pronouns (*"it"*, *"they"*, *"such organizations"*) with the explicit canonical entity (*"The Cloud Service Provider (CSP)"*).

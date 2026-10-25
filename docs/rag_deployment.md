@@ -1,6 +1,60 @@
 # System Deployment & Configuration Guide
 
-This document specifies the environment variables, connection strings, service configurations, and network dependencies required to deploy the Tri-Store Hybrid RAG pipeline.
+## Current target: connect to hosted services
+
+Follow the [implementation plan](./implementation_plan.md) for the current design. LiteLLM, Docling or LiteParse, Qdrant, and Memgraph are provided services. Deploy DocBrain's API and worker from this repository; do not deploy replacement databases or administer provider infrastructure as a side effect of starting the application.
+
+**Status:** application packaging, endpoints, migrations, and commands are planned, not implemented. The historical examples later in this document do not constitute a working deployment recipe.
+
+### Ownership and required access
+
+| Dependency | Supplied by operator | DocBrain responsibility |
+| --- | --- | --- |
+| LiteLLM | TLS endpoint, restricted application key, model aliases, quotas | LangChain integration, structured-output validation, bounded calls, usage tracking. Never require the gateway master key. |
+| Parser | Endpoint, authentication, engine/version, request/job protocol | Normalize output, preserve source coordinates, enforce file/page limits, record parser profile. |
+| Qdrant | Endpoint, restricted API key, environment namespace | Explicit versioned collection/index migrations; filtered reads/writes and embedding-profile validation. |
+| Memgraph | Bolt/TLS endpoint, credentials, supported version/procedures | Memgraph-specific migrations and queries, bounded traversal, capability-gated MAGE jobs. No assumption of Neo4j APOC or GDS. |
+| PostgreSQL (proposed) | Database, application/migration roles, backup policy | Registry, durable jobs, audit/approval records, LangGraph checkpoint schema. |
+| Artifact storage | Bucket/prefix or development directory, retention policy | Immutable artifacts, checksums, authorized source access, cleanup ledger. |
+| Identity/telemetry | Trusted identity configuration, optional OTLP endpoint | Request authorization, trace redaction, health/readiness and operational metrics. |
+
+### Proposed application settings
+
+These are configuration contract names to implement in Phase 0, not settings consumed by today's reference modules. Secrets are injected by the operator's secret manager. `.env.example` will contain empty secret values, and `.env` must be excluded from Git before it is created.
+
+| Group | Settings |
+| --- | --- |
+| Environment | `DOCBRAIN_ENV`, `LOG_LEVEL`, `SERVICE_NAMESPACE` |
+| Models | `LITELLM_BASE_URL`, `LITELLM_API_KEY`, `MODEL_ROUTER`, `MODEL_EXTRACTOR`, `MODEL_SUMMARIZER`, `MODEL_ANSWER`, `MODEL_EMBEDDING`, optional `MODEL_RERANKER` |
+| Embedding profile | `EMBEDDING_PROFILE`, `EMBEDDING_DIMENSION`, `SPARSE_MODEL`; validate against actual responses and collection configuration |
+| Parser | `PARSER_PROVIDER` (`docling` or `liteparse`), `PARSER_BASE_URL`, `PARSER_API_KEY`, `PARSER_PROFILE` |
+| Vector index | `QDRANT_URL`, `QDRANT_API_KEY`, `QDRANT_CHUNK_COLLECTION`, `QDRANT_SEMANTIC_COLLECTION` |
+| Graph | `GRAPH_PROVIDER=memgraph`, `GRAPH_URI`, `GRAPH_USERNAME`, `GRAPH_PASSWORD`; TLS behavior tested against the supplied endpoint |
+| Durable state | `DATABASE_URL`; separate administrator credentials used only by explicit migrations |
+| Artifacts | `ARTIFACT_BACKEND`, `ARTIFACT_ROOT` or `ARTIFACT_BUCKET`/`ARTIFACT_PREFIX`; prefer workload identity for hosted access |
+| Identity | `AUTH_ISSUER`, `AUTH_AUDIENCE`; local development identity only in an explicit non-shared mode |
+| Limits | `REQUEST_TIMEOUT_SECONDS`, `JOB_MAX_ATTEMPTS`, `WORKER_CONCURRENCY`, `MAX_UPLOAD_BYTES`, `MAX_DOCUMENT_PAGES`, `QUERY_TOKEN_BUDGET` |
+| Telemetry | Optional `OTEL_EXPORTER_OTLP_ENDPOINT`; document/prompt capture disabled by default |
+
+Provider replacement requires passing adapter contract tests and migrating incompatible data. Do not advertise unsupported providers in settings before adapters exist. Keep model credentials, TLS policies, data residency, quotas, and retry behavior explicit; do not silently fall back to an unapproved public endpoint.
+
+### Release sequence
+
+1. Install the locked application environment and validate settings without mutations. Confirm parser and model capability profiles and read-only service connectivity.
+2. Provision isolated staging namespaces through the service owner. Use disposable fixtures for write probes; never infer permission to write into existing production collections.
+3. Review migration plans for Postgres, Qdrant, and Memgraph. Apply with an operator-authorized migration role, not on API startup. Runtime credentials are less privileged.
+4. Run adapter contracts, then ingestion/publication/query/citation/rollback tests against the actual service versions. Exercise worker interruption, stale approvals, and provider failure.
+5. Start the API and separate worker. LangGraph runs in these processes; PostgreSQL provides job leases and checkpoints. Redis/Celery and a hosted agent platform are not initial requirements.
+6. Ingest a canary corpus, inspect its evidence, compare evaluation results, and publish its validated manifest. Increase load only after latency, cost, and scope-isolation gates pass.
+7. Obtain authorization for shared deployment/cutover. Retain the previous compatible application version and manifest; schema rollback must respect retained data and cannot revive revoked access.
+
+Health checks must distinguish liveness, required-dependency readiness, and optional enrichment availability. Do not perform paid model generations on every readiness probe. Operational dashboards track queue age, stage failures, unpublished builds, citation resolution errors, dependency latency, and per-run cost.
+
+Back up the registry, checkpoint state, and immutable artifacts. Test restoring citation resolution and resumable jobs; vector/graph snapshots alone are insufficient. For model/index changes, build a parallel profile, validate it, and switch manifests rather than overwriting the old embedding space.
+
+## Historical self-hosting examples — not current instructions
+
+The remaining sections preserve the earlier Neo4j/Celery/self-hosting design for reference only. Their container tags, credentials, plugin assumptions, latency expectations, configuration fields, and commands have not been validated for the current project. Referenced application modules and Dockerfiles may not exist. Do not copy these examples into production; the hosted-service contract above supersedes them. No real credentials should be stored in this document.
 
 ---
 
@@ -382,7 +436,7 @@ OTEL_EXPORTER_OTLP_PROTOCOL=grpc
 
 ## 4. Docker Compose Orchestration Specification
 
-Use this production-ready compose profile to bring up the supporting databases and routing infrastructure:
+Historical topology sketch only; this is not a tested or production-ready compose profile:
 
 ```yaml
 version: '3.8'
