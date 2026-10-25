@@ -6,6 +6,8 @@ A technical guide for autonomous agents to perform layout-aware semantic chunkin
 
 **Evidence rule:** normalized retrieval text may clarify source context but must not invent obligations or technologies. Generated interpretations and proposed controls are separate records. Embedding profiles and source/build identities are mandatory; sparse retrieval improves lexical recall but cannot guarantee perfect recall.
 
+**Mixed-source/site indexing:** carry tenant/site/process scope, source role, authority subtype, review/effective state, and derivative lineage into chunk payloads, graph assertions, summary dependencies, and retrieval/cache predicates. Shared corporate sources require explicit scope; an absent site ID is not permission to share. Do not merge regulatory obligations with similar process instructions or template examples. Summaries must preserve these distinctions and cannot combine sources with incompatible audiences. Index publication makes evidence queryable; it does not approve an organizational document. Generated `assets/publish` packages enter knowledge only through explicit registration with original dependency lineage, never recursive ingestion. Source changes invalidate dependent documentation packages as well as summaries; see DB-031–DB-035 in the [backlog](./coding_tasks.md).
+
 **Architecture Reference:** [rag_architecture.md](./rag_architecture.md)  
 **Upstream Inputs:** [rag_parse.md](./rag_parse.md) (Parsed & Normalized Text) & [rag_extract.md](./rag_extract.md) (Graph Entities)  
 **Downstream Retrieval:** [rag_retrieve.md](./rag_retrieve.md) (Broker & Fusion)

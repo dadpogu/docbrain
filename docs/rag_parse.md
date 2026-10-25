@@ -1,10 +1,12 @@
 # Stage 1: Document Parsing & Semantic Normalization
 
-A detailed engineering guide for autonomous agents to ingest raw regulatory documents, preserve structural hierarchy, unroll complex formats, and engineer deterministic semantic assertions.
+A detailed engineering guide for agents to ingest regulatory, process, and site documents, preserve structural hierarchy, normalize complex formats, and retain source-grounded assertions.
 
 **Implementation status:** design guidance, not an implemented parser. The [implementation plan](./implementation_plan.md) governs contracts and delivery. Benchmark hosted Docling and LiteParse behind one canonical document contract; retain original parser output and profile identity. Import existing Markdown with section/text-span provenance when raw files are unavailable, without fabricated page coordinates.
 
 **Source fidelity rule:** normalization must not strengthen an obligation, invent a threshold, or resolve an ambiguous actor without evidence. Separate verbatim text from generated interpretation, preserve uncertain references, and quarantine low-confidence OCR of numbers/negation. Examples below are synthetic illustrations, not verified statements of a named standard.
+
+**Mixed-source contract:** preserve source role (regulatory authority, process description, site fact, organizational document, template, generated derivative), tenant/site/process scope, revision/effective dates, and claimed versus verified approval status. Non-legal documents need document/section IDs, not fabricated Act/clause identifiers. Preserve process ordering, prerequisites, hold points, equipment tags, role references, and explicit unknowns such as `torque x`/`[TBC]`. A template's sample limit is not a site fact. Missing source references or empty templates become findings, not invented content. Existing `assets/publish` files are imported only through explicit registration; generated output is excluded from automatic ingestion. DB-031 in the [backlog](./coding_tasks.md) defines acceptance cases.
 
 **Architecture Reference:** [rag_architecture.md](./rag_architecture.md)  
 **Next Stage:** [rag_extract.md](./rag_extract.md) (Knowledge Extraction) & [rag_encode.md](./rag_encode.md) (Embedding & Indexing)

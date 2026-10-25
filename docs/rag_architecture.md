@@ -1,6 +1,6 @@
 # Hybrid RAG Architecture
 
-A unified, tri-focal retrieval architecture designed for high-precision regulatory compliance, risk analysis, and operational workflow generation.
+A unified, tri-focal retrieval architecture for regulatory compliance, risk analysis, and generation of site-specific policies, manuals, and procedures from regulatory, process, and site knowledge.
 
 ## Implementation baseline
 
@@ -9,11 +9,18 @@ A unified, tri-focal retrieval architecture designed for high-precision regulato
 - **Hosted dependencies:** LiteLLM, Docling or LiteParse, Qdrant, and Memgraph. Integrations are replaceable at tested adapter boundaries; switching storage still requires data migration.
 - **In-repository execution:** LangChain tools/model composition and LangGraph ingestion, answering, and approval workflows. The retrieval broker and compliance agents are part of DocBrain, not separate products to procure.
 - **Application state:** proposed PostgreSQL registry for immutable versions, publication manifests, jobs, audit records, and durable workflow checkpoints; original/derived files live in artifact storage.
-- **Release order:** cited vector Q&A → grounded graph relationships → hierarchical/global retrieval → approval-gated change impact and procedures. Advanced retrieval must beat the baseline on its target query classes.
+- **Release order:** cited vector Q&A → grounded graph relationships → evaluated hierarchical/global retrieval and approval-gated site documentation. Mixed-source/site contracts start during ingestion; Documentation Agent delivery does not require optional community retrieval to succeed.
 - **Consistency:** publish validated builds through an atomic registry manifest update. There is no distributed transaction across Qdrant and Memgraph; retries, reconciliation, and snapshot-scoped reads are required.
-- **Trust:** access checks apply to all stores and derived summaries. Extracted law, inferred interpretations, proposed controls, and approved policy remain distinct. Citation presence alone does not prove claim support.
+- **Trust:** tenant/site/process access checks apply to all stores, derived summaries, and exported documents. Extracted law, site facts, draft process descriptions, templates, proposed controls, and approved policy remain distinct. Citation presence alone does not prove claim support, applicability, or approval.
+- **Documentation Agent:** lives in RETRIEVE and uses the shared broker to generate document packages; authenticated application operations handle review and publication to `assets/publish`. The model cannot approve itself, write arbitrary paths, or operate plant/business systems.
 
 The [project structure](./project_structure.md) distinguishes existing files from planned modules. [Deployment guidance](./rag_deployment.md) separates the hosted-service target from legacy self-hosting examples.
+
+### Knowledge inputs and generated outputs have different authority
+
+The source-document input in the overview below includes legislation/rules, permits, standards/guidance, process descriptions, site/equipment facts, and existing organizational documents. All use PARSE → EXTRACT → ENCODE, retaining source class, revision, approval state, and authorized site/process scope. Templates are formatting inputs, not evidence for legal duties or operating limits. Topic similarity alone never establishes regulatory applicability.
+
+The Documentation Agent's router arrow denotes a retrieval request; the Evidence Bundle also returns to that agent for drafting and verification. The ordinary Q&A response path is separate from controlled document publication. Knowledge-index publication does not approve a generated policy, and an existing file under `assets/publish` is not automatically approved knowledge.
 
 ---
 
@@ -62,6 +69,7 @@ graph TD
 
     subgraph RETRIEVE["4. Retrieve Stage"]
         USER["User Query / Agent Prompt"]:::agent --> ROUTER{"Two-Tier Query Router"}:::broker
+        DOCAGENT["Documentation Agent"]:::agent --> ROUTER
 
         ROUTER -->|"Point / Factual"| VS
         ROUTER -->|"Thematic / Overview"| SL
@@ -106,7 +114,7 @@ graph LR
 | **Stage 1: Parse** | [rag_parse.md](./rag_parse.md) | Document structure parsing, dual Markdown/JSON AST, list/table unrolling, pronoun de-anonymization, sentence atomization, and RFC 2119 modality tagging. | [`models.py`](../src/models.py) |
 | **Stage 2: Extract** | [rag_extract.md](./rag_extract.md) | 4-tier knowledge architecture (Document $\to$ Concept $\to$ Risk/Control $\to$ Workflow), schema-guided entity extraction, Leiden community detection, and audit-safe graph evolution. | [`graph_engine.py`](../src/graph_engine.py) |
 | **Stage 3: Encode** | [rag_encode.md](./rag_encode.md) | Layout-aware semantic chunking, dual-text indexing (normalized embeddings vs. verbatim payloads), recursive RAPTOR tree construction, storage collection DDLs, and differential ingestion. | [`semantic_tree.py`](../src/semantic_tree.py), [`lifecycle.py`](../src/lifecycle.py) |
-| **Stage 4: Retrieve** | [rag_retrieve.md](./rag_retrieve.md) | Two-tier adaptive routing, multi-store search execution, Graph-to-Vector Grounding Expansion, Weighted RRF, cross-encoder re-ranking, and Corrective RAG (CRAG). | [`router.py`](../src/router.py), [`broker_fusion.py`](../src/broker_fusion.py) |
+| **Stage 4: Retrieve** | [rag_retrieve.md](./rag_retrieve.md) | Routing, grounding, fusion, corrective Q&A, and Documentation Agent generation with applicability assessment, package validation, human review, and controlled export. | [`router.py`](../src/router.py), [`broker_fusion.py`](../src/broker_fusion.py); planned `workflows/documentation.py` |
 
 ---
 
@@ -212,6 +220,49 @@ sequenceDiagram
 
 ---
 
+### 4.3 Documentation Agent: evidence to controlled site documents
+
+```diagram
+┌───────────────────────────┐     ┌──────────────────────────────┐
+│ Site/process + document   │────▶│ Documentation Agent          │
+│ request + template refs   │     │ Authorize, pin, plan sections│
+└───────────────────────────┘     └──────────────┬───────────────┘
+                                               │ section queries
+                                               ▼
+┌───────────────────────────┐     ┌──────────────────────────────┐
+│ Scoped knowledge: law,    │◀───▶│ Shared Retrieval Broker      │
+│ permits, processes, sites │     │ Evidence + missing sources   │
+└───────────────────────────┘     └──────────────┬───────────────┘
+                                               ▼
+                                 ┌──────────────────────────────┐
+                                 │ Applicability + drafting     │
+                                 │ Policy / manual / procedure  │
+                                 └──────────────┬───────────────┘
+                                               ▼
+                                 ┌──────────────────────────────┐
+                                 │ Verify coverage, consistency │
+                                 │ and source support; list gaps│
+                                 └──────────────┬───────────────┘
+                                               ▼
+                                 ┌──────────────────────────────┐
+                                 │ Authorized human review      │
+                                 │ Reject/revise or approve hash│
+                                 └──────────────┬───────────────┘
+                                               ▼
+                                 ┌──────────────────────────────┐
+                                 │ Controlled application export│
+                                 │ assets/publish/.../revision/ │
+                                 └──────────────────────────────┘
+```
+
+LangGraph checkpoints preserve the outline, per-section drafts, source snapshot, applicability decisions, missing facts, and review state. The agent links applicable requirements → controls → document sections/steps, retaining exact regulatory and operational source spans. Process or site changes are first-class change triggers alongside law changes. Conflicts and unresolved dependencies require review, not automatic precedence based on retrieval score.
+
+Exports contain Markdown documents, a package manifest, evidence mappings, and review/gap records. Draft exports are marked **not for operational use**; only approved, dependency-current revisions can become the registry's published package. Safe staging and idempotent publication preserve previous complete packages. Approval is bound to exact content and dependencies; edits or source changes invalidate it. Generated documents are not recursively ingested as independent authority.
+
+Existing P-001 and WI-007 are draft examples with unresolved operating values and missing source references. Preserve them unchanged; registration must record their actual trust status. Safety-critical gaps require qualified technical review before publication. The [implementation plan](./implementation_plan.md#documentation-agent-workflow-retrieve) defines package paths, contracts, API, and review rules; DB-031–DB-035 in the [backlog](./coding_tasks.md) define delivery checks.
+
+---
+
 ## 5. Quality Assurance & Continuous Evaluation
 
 To quantitatively validate retrieval performance and prevent compliance hallucination, continuous evaluation measures five core metrics:
@@ -232,3 +283,4 @@ graph TD
 - **Answer Relevance:** Semantic alignment between the generated response and the user's original query.
 - **Multi-Hop Traversal Accuracy:** Precision of relational paths traversed in the Knowledge Graph against gold standard compliance benchmarks.
 - **Hierarchical Tree Utilization:** Frequency with which macro thematic queries resolve via high-level summary nodes rather than brute-force chunk scanning.
+- **Documentation quality:** reviewed obligation coverage, correctly grounded site facts/limits, consistent roles and cross-document references, visible gaps, and isolation between sites. Valid citation IDs alone are insufficient. Reject unsupported safety-critical instructions, stale approvals, circular evidence, and partial-package publication; test change propagation from process and site inputs as well as legislation.

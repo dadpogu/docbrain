@@ -2,9 +2,11 @@
 
 Status: proposed implementation baseline, 2026-10-25. No production deployment or service provisioning is implied by this document.
 
+**Coding backlog:** [source-driven tasks](./coding_tasks.md) break these phases into dependency-ordered increments using the supplied *Recycling and Waste Reduction Act 2020* and site-document examples. They include twenty legal Q&A scenarios, ten documentation scenarios, target modules, and completion gates. Task checkboxes record implementation progress; this plan remains the architectural baseline.
+
 ## 1. Deliver grounded answers before autonomous actions
 
-Build a Python application that ingests regulatory documents, answers questions with inspectable source evidence, explains regulatory changes, and proposes controls and procedures for human approval. The agents, prompts, tools, and workflows live in this repository; hosted providers supply parsing, models, vector storage, and graph storage.
+Build a Python application that ingests regulatory, process, and site-specific documents, answers questions with inspectable source evidence, explains changes, and generates site-specific policies, manuals, and procedures for human approval. The **Documentation Agent**, within RETRIEVE, combines applicable regulatory obligations with process evidence and site facts through the shared retrieval broker. Its versioned output packages live under `assets/publish` in local development. The agents, prompts, tools, and workflows live in this repository; hosted providers supply parsing, models, vector storage, and graph storage.
 
 The first usable release is **version-aware, cited document Q&A**. Graph extraction and hierarchical summaries extend that baseline only when evaluation shows a benefit. A generated control is a proposal, not a legal determination or an instruction to change a production system.
 
@@ -15,6 +17,7 @@ This plan governs implementation order, contracts, and technology choices. The s
 - “Dockling” means **Docling**; “Lanchain” means **LangChain**. Use **LangGraph** for explicit, checkpointed workflows within the LangChain ecosystem.
 - LiteLLM, a parser service, Qdrant, and Memgraph endpoints are supplied externally. DocBrain owns clients and compatibility checks, not those services' deployment.
 - English-language Australian legislation in `assets/parsed/GLOBAL.AU` is the initial corpus. Other jurisdictions and languages are later evaluation tracks, not assumptions about current accuracy.
+- Process descriptions, site profiles, equipment instructions, permits, existing organizational documents, and templates join the same knowledge pipeline with distinct source roles and approval states. A folder name or a document's self-declared status is not evidence of authenticated approval. Existing `assets/publish` examples are reference inputs only when explicitly registered; do not recursively ingest generated outputs.
 - Begin with a single organization, but carry tenant, corpus, and access-scope identifiers from the first release. Do not expose a shared deployment until authorization tests pass.
 - Propose **PostgreSQL** for document/version manifests, durable jobs, approvals, audit records, and LangGraph checkpoints. This is an additional dependency requiring an available endpoint before shared deployment. SQLite plus local files is acceptable for a single-process development mode, not a production failover.
 - Preserve originals and derived artifacts in an existing object store, or a local artifact directory during development. Do not put entire PDFs or parser output into workflow checkpoints.
@@ -27,7 +30,7 @@ This plan governs implementation order, contracts, and technology choices. The s
 | Models | Hosted LiteLLM gateway | Role aliases for routing, extraction, summarization, answering, embeddings, and optional reranking. Record resolved model/version and usage. Provider credentials remain at the gateway. |
 | Agent components | LangChain | Typed tools, structured model output, prompt composition, model integration. Keep domain objects independent of LangChain `Document` and message types. |
 | Workflow execution | LangGraph in this repository | Explicit states, bounded loops, checkpoints, cancellation, human interrupts. No hosted LangGraph platform requirement. |
-| Parser | Docling-first evaluation; LiteParse alternative | Both must return DocBrain's `ParsedDocument`, preserving native output separately. Choose from corpus measurements, not a claimed universal winner. |
+| Parser | Supplied LiteParse export as first comparison candidate; Docling challenger | Both adapters target DocBrain's `ParsedDocument`, preserving native output separately. Select a production parser from PDF-reviewed measurements; no winner yet. |
 | Vector retrieval | Hosted Qdrant | Dense plus sparse retrieval, payload filters, ID fetch, batch writes, pagination. Keep SDK result objects inside the adapter. |
 | Graph retrieval | Hosted Memgraph | Parameterized, bounded Cypher templates and provenance-aware writes. Bolt compatibility does not imply Neo4j APOC/GDS compatibility. |
 | Durable application state | PostgreSQL | Transactions govern job claims, manifest publication, approvals, and audit events. LangGraph uses its supported Postgres checkpointer in a separate namespace. |
@@ -48,11 +51,15 @@ Start sparse retrieval with a pinned BM25 implementation, using FastEmbed/Qdrant
 
 ### Parser decision experiment
 
-Benchmark both available services on native-text PDFs, scanned pages, nested clauses, multi-page tables, footnotes, and DOCX/HTML samples. Measure clause/reading-order preservation, table cell associations, source-span fidelity, OCR errors in numbers and negations, latency, and cost per page. Record parser version and settings.
+Start offline with the supplied [LiteParse Markdown export](../assets/parsed/GLOBAL.AU/C2026C00317.md), the [earlier structured Markdown](../assets/parsed/GLOBAL.AU/C2020A00119-recycling-and-waste-reduction-act-2020.md), and reviewed spans of their raw Recycling Act PDF. These are two candidate renderings of compilation `C2026C00317`, not two legal versions. Record the user's LiteParse attribution, but leave its engine version, options, timing, and native-coordinate availability unknown: the export does not establish them. Neither Markdown is ground truth.
 
-Docling is the starting preference because its document model exposes hierarchy, tables, and provenance. LiteParse is a valid local-first engine that can be hosted behind the same contract; it is not LlamaParse. Capability depends on the installed version and service wrapper. Do not assume identical JSON schemas, OCR engines, or supported formats. Implement the winning adapter first; add fallback routing only for a measured failure class.
+The supplied LiteParse export retains page furniture and contents, has no YAML metadata, uses different heading depths, and places some subsection boundaries inline. Section 151's four-page table has detached person/decision columns and incomplete pipe-table rows; section 2 also interleaves table columns with surrounding prose. Preserve these defects as regression inputs, not hand-repaired originals. Recover structure only from traceable source evidence; ambiguous table relationships must remain flagged and unavailable for factual synthesis until re-extraction or review resolves them. The earlier Markdown's structured tables are comparison candidates, not permission to silently transplant cells.
 
-The existing Markdown corpus can bootstrap Q&A without waiting for raw-file parsing. Mark its provenance as imported Markdown, cite sections and character spans, and never invent PDF page coordinates. Parser quality cannot be evaluated from those Markdown files alone.
+Then benchmark reproducible runs of available LiteParse and Docling services against the same source hashes and reviewed expectations. Measure clause/reading-order preservation, table cell associations, source-span fidelity, OCR errors in numbers and negations, latency, and cost per page. Record engine/wrapper versions, settings, and native responses separately from Markdown export steps. An offline artifact comparison cannot supply runtime or cost measurements. Add native-text PDFs, scanned pages, nested clauses, multi-page tables, footnotes, and DOCX/HTML samples as fixtures become available.
+
+Docling's document model makes it a useful hierarchy/table/provenance challenger, not an already measured improvement. LiteParse is not LlamaParse. Capability depends on the installed version and service wrapper; do not assume identical schemas, OCR engines, or supported formats. Implement the winning adapter first; add fallback routing only for a measured failure class. Correct legal qualifiers and table associations are hard gates: throughput cannot compensate for a wrong person/decision pairing.
+
+The Markdown corpus can bootstrap Q&A without waiting for raw-file parsing. Mark provenance as imported Markdown, cite immutable text spans and sections, and never invent PDF coordinates from separator counts or a global page offset. Associate metadata-less imports through explicit source manifests and reconciliation, not filenames alone. Preserve missing image references as warnings; do not fetch arbitrary assets. Additional fixtures are still needed for scanned and non-PDF formats. Detailed observed failures and acceptance checks live in the [coding backlog](./coding_tasks.md).
 
 ## 3. Runtime ownership
 
@@ -93,12 +100,19 @@ The API and worker share one package and domain contracts. CPU-heavy local parsi
 | Summary/community | Scope, build/snapshot dependencies, source chunk IDs, level/type, content, and generation profile. Cross-document summaries have corpus identity, not a fabricated document ID. |
 | Evidence bundle | Query, authorized scope, selected manifest revision, as-of policy, intent, evidence items, supporting source spans, retrieval diagnostics, partial-result reasons, and token usage. |
 | Answer | Text, claim-to-evidence references, unsupported/missing facets, warnings, status (`answered`, `partial`, `insufficient_evidence`), and run ID. |
+| Site/process context | Tenant-scoped site/process IDs, jurisdiction, activities, equipment, roles, permits, effective revisions, and evidence for each fact. Unknown applicability is explicit; missing site scope is not global scope. |
+| Applicability decision | Requirement version, site/process revision, `applicable`/`not_applicable`/`undetermined`, rationale, source spans, missing facts, reviewer identity and decision revision. Model suggestions remain unapproved. |
+| Documentation package | Package/revision IDs, document kinds/IDs, target site/process, pinned source manifest and applicability decisions, template/model/prompt profiles, section-to-source/control mappings, unresolved issues, file hashes, status, owner/approver records, effective date, and dependency ledger. |
 
 Use deterministic UUIDs derived from canonical domain IDs for Qdrant point IDs; Qdrant accepts UUIDs or unsigned integers, not arbitrary strings such as `doc_x#c0001`. Keep the readable domain ID in payloads. Versioned IDs prevent an updated passage from changing the meaning of an old citation.
 
 Define span coordinates explicitly: page index convention, bounding-box origin/units, and character offsets into a named immutable text artifact. “Verbatim” means extracted source text, not guaranteed perfect OCR; OCR/cleanup provenance remains visible. Manual cleanup creates a derived revision with author, reason, original reference, and diff; it never overwrites original evidence.
 
 Separate legal effective time from system observation/publication time. Default to the latest approved available version and disclose its date; an as-of question selects an explicit effective date. Missing or conflicting dates must produce a warning rather than an assertion that the corpus represents current law.
+
+Classify each source as regulatory authority, process description, site fact, organizational policy/procedure, template, or generated derivative; additionally distinguish law, permit conditions, standards, and guidance within authority sources. Record tenant/site/process scope, source approval state, document owner, revision, and dependency provenance on chunks, assertions, summaries, and evidence bundles. Organization-wide material must be explicitly assigned an authorized shared scope. A federal Act matching the topic does not establish that a particular site or activity is subject to it; applicable state law, permits, rules, and exemptions may be missing.
+
+Keep three independent states: a knowledge build being queryable, a document's review/effective status, and a generated package's export status. Neither presence in `assets/publish` nor ingestion approval makes a document effective organizational policy. Templates supply layout, not facts or mandatory limits. Existing draft instructions may inform a visibly provisional draft, but cannot establish verified plant safety limits or legal duties.
 
 ### Extraction is not policy invention
 
@@ -147,7 +161,23 @@ Editorial changes, renumbering, and semantic changes are separate classes. A num
 
 LangGraph interrupts pause approval steps; durable checkpoints permit resumption. The approval API authenticates reviewer role, verifies the proposal version/hash, records the decision, and rejects stale or repeated decisions. Side effects before an interrupt must be idempotent because a node may restart on resume. Approval changes DocBrain's records only; execution in external business systems is a later, separately authorized integration.
 
-Tools exposed to agents are narrow: `search_evidence`, `fetch_source_span`, `trace_requirement`, `compare_versions`, and `propose_control`. Tool inputs do not grant access: tenant and permissions come from trusted request context. Database credentials and raw unrestricted query tools are never given to the model.
+### Documentation Agent workflow (RETRIEVE)
+
+`authorize target → pin source/site/process revisions → assess applicability and gaps → plan document set → retrieve evidence per section → draft → validate package → human review → export approved revision`
+
+- Accept a site, process scope, as-of date, requested document types, approved template references, and optional prior package revision. Initial required types are **policy**, **manual**, and **procedure**; process maps, work instructions, and blank forms are linked supporting artifacts where requested. Manual sections reference procedures by stable IDs and exact revisions rather than duplicating inconsistent instructions.
+- Retrieve regulatory obligations and operational evidence separately under the same authorized snapshot, then join them through reviewed applicability decisions and requirement/control dependencies. Preserve source class in the evidence bundle. Rank alone cannot resolve conflicts or turn an internal preference into law. Missing permits, delegated rules, equipment specifications, or site facts become actionable gap items with an owner to confirm, not invented content.
+- Draft in bounded section-level calls using a package-wide outline, terminology/role register, document-ID register, and shared evidence map. Store section outputs and checkpoints; cap total tokens, sections, corrective rounds, time, and retries. No requirement to fit a manual into the Q&A evidence token budget or meet Q&A latency targets.
+- Each substantive requirement, operating step, numerical limit, role assignment, and legal statement links to immutable evidence or is explicitly labelled a proposed organizational control needing approval. Preserve `torque x`, `[TBC]`, and missing-rule limitations as unresolved issues. Never copy template examples such as `0 PSI` or `5°C/min` into a site instruction without validated site evidence. Safety-critical missing/conflicting facts block approval, even when a draft can be produced.
+- Validate coverage of selected applicable obligations; list exclusions and rationale. Check citations, numeric/unit/modality fidelity, step prerequisites/hold points, policy/manual/procedure consistency, cross-document links, source status, and site isolation. An LLM judge cannot authorize a safety-critical procedure. Require designated site/process and compliance reviewers; safety-critical content requires a competent technical reviewer. Exact people and role policy are deployment inputs.
+- Use `draft → in_review → approved → published` as the successful document lifecycle, with rejection returning a new draft revision. Bind decisions to package content hashes and the source/template/applicability revisions. Any content edit invalidates prior approval; dependency changes before approval or export force reassessment. An export is not an external filing, staff notification, or instruction to operate equipment.
+- Export Markdown first to `assets/publish/<tenant-id>/<site-id>/<package-id>/<revision>/`, with `policies/`, `manuals/`, `procedures/`, and requested supporting document directories. Include `manifest.json`, `evidence.json`, and `review.md` for identity/status/checksums, section-level traceability, approvals, gaps, and change rationale. Draft exports are permitted only with conspicuous draft/not-for-operational-use status and must never become the current approved package. PDF/DOCX rendering is deferred until required.
+- The application owns rendering and safe paths; the model never selects filesystem destinations. Stage a complete package, verify hashes/links, move it into an immutable revision directory, then update the registry's current published reference with compare-and-swap. Reconcile crash-orphaned exports; retries cannot duplicate publication, overwrite existing examples, or expose a partial package as current. Readers use the registry's approved reference, not a directory scan.
+- Law, permit, site/process, equipment, or approved organizational-source changes mark dependent packages `needs_review`; retain the prior revision and show its review-required state, but do not silently rewrite or present it as current validated guidance. Revocation/erasure also applies to exported derivatives and downloads. Re-ingestion of an approved generated document is explicit, carries original lineage and derivative classification, and cannot provide circular support for its own obligations.
+
+The existing P-001 process and WI-007 emergency-shutdown documents are draft examples, not validated instructions. Their unresolved values and referenced but unavailable source documents are deliberate acceptance cases. Do not claim the supplied Recycling Act establishes Wodonga plant operating limits or covers all Victorian obligations.
+
+Tools exposed to agents are narrow: `search_evidence`, `fetch_source_span`, `trace_requirement`, `compare_versions`, `propose_control`, and `propose_document_package`. Approval and export are authenticated application operations, not model tools. Tool inputs do not grant access: tenant and permissions come from trusted request context. Database credentials, unrestricted query tools, and arbitrary filesystem writes are never given to the model.
 
 ## 6. Delivery phases and acceptance gates
 
@@ -163,11 +193,11 @@ Add an explicit `doctor` command to report endpoint/version/capability compatibi
 
 ### Phase 1 — Source registry, provenance, and durable ingestion
 
-**Build:** canonical contracts, SQL migrations, artifact storage, Markdown import, first parser adapter, clause-aware chunking, durable job claims/recovery, and source-inspection CLI. Add raw fixtures needed for the parser comparison; verify redistribution rights before committing samples.
+**Build:** canonical contracts, SQL migrations, artifact storage, Markdown import, first parser adapter, clause-aware chunking, durable job claims/recovery, and source-inspection CLI. Start the parser comparison with the supplied raw Recycling Act and add fixtures for missing format/OCR cases; verify redistribution rights before committing samples.
 
-Use the seven existing legislation Markdown files for the first end-to-end ingestion dataset. Capture title, authority identifiers, jurisdiction, provenance quality, and unknown metadata without inventing sidecars. Preserve cross-references and definitions; split oversized tables with repeated headers and source-cell links.
+Use the eight supplied Markdown files representing seven Acts for the first ingestion dataset; evaluate the Recycling Act's two renderings in isolated builds, not as duplicate corroborating evidence. Reconcile its supplied JSON with the earlier Markdown front matter, LiteParse cover text, explicit artifact associations, and PDF identity; do not invent sidecars for the others. Capture title, authority identifiers, jurisdiction, provenance quality, and unknown metadata. Preserve cross-references and definitions; split oversized tables with repeated headers and source-cell links. In particular, preserve section 151's 28 reviewable-decision items and section 153's review qualifications together in retrievable evidence. A candidate with unresolved table associations cannot pass the full-document quality gate; a deliberately partial build must disclose and exclude the affected evidence.
 
-**Gate:** the same version/profile ingested twice yields one logical build; changed bytes create a new version; malformed/encrypted/oversized documents produce actionable errors; worker interruption resumes safely. Table conditions, negation, clause numbers, and available source coordinates survive normalization.
+**Gate:** the same artifacts/version/profile ingested twice yield one logical build; changed bytes create a new artifact/derivation, not automatically a new official legal version; malformed/encrypted/oversized documents produce actionable errors; worker interruption resumes safely. Table conditions, negation, clause numbers, and available source coordinates survive normalization.
 
 ### Phase 2 — Cited Q&A MVP
 
@@ -193,11 +223,11 @@ Build global summaries separately for compatible access scopes; a private docume
 
 **Gate:** ablation evaluation compares vector-only, vector+graph, and full retrieval on held-out questions. Added paths improve their target query classes without degrading citation/authorization guarantees or exceeding agreed budgets. Ship optional advanced paths disabled if they fail this gate.
 
-### Phase 5 — Change impact and approval-gated procedures
+### Phase 5 — Site documentation, change impact, and controlled publication
 
-**Build:** version diffing, obligation comparison, dependency impact traversal, draft risks/controls/procedures, approval/rejection/resume endpoints, and append-only decision history. Add reviewer-readable evidence exports; no UI framework is needed until an actual review workflow requires it.
+**Build:** version diffing, obligation comparison, site/process applicability assessment, dependency impact traversal, Documentation Agent generation of policy/manual/procedure packages, approval/rejection/resume endpoints, controlled `assets/publish` exports, and append-only decision history. Ingest mixed source roles and site metadata in Phase 1; do not defer that schema work until generation. Add reviewer-readable evidence exports; no UI framework is needed until an actual review workflow requires it.
 
-**Gate:** a changed threshold identifies the correct downstream controls; editorial changes do not silently alter approved procedures; reviewed proposals resume after process restart. Unauthorized, stale, and replayed approval requests are rejected. Generated suggestions remain visibly distinct from extracted law and approved organizational policy.
+**Gate:** a selected site receives a consistent policy, manual, and procedure package grounded in authorized regulatory and operational evidence. Missing safety limits or applicability evidence blocks approval; template example values never become site facts. Site A's facts do not leak into site B's documents. A changed law or process identifies the correct downstream sections; editorial changes do not silently alter approved procedures. Reviewed proposals resume after process restart; export failure cannot replace the last complete approved package. Unauthorized, stale, and replayed approval requests are rejected. Generated suggestions remain visibly distinct from extracted law and approved organizational policy.
 
 ### Phase 6 — Shared-service release hardening
 
@@ -220,13 +250,17 @@ These are planned contracts, not existing routes or executable commands.
 | `POST /v1/answers` | Return a verified/partial/insufficient answer with evidence, warnings, and run ID. Optional progress stream. |
 | `GET /v1/sources/{chunk_id}` | Authorize and resolve the exact source version/span; return an excerpt or short-lived artifact access. |
 | `POST /v1/change-assessments` | Queue comparison of two authorized versions and create a reviewable impact proposal. |
+| `POST /v1/document-packages` | Queue Documentation Agent work for an authorized site/process, requested types, template revisions, as-of date, optional previous revision, and idempotency key; return job/package IDs. |
+| `GET /v1/document-packages/{id}` | Authorized revision/status, document inventory, gaps, evidence/coverage map, review decisions, and source dependencies. |
+| `POST /v1/document-packages/{id}/exports` | Export the expected revision/hash in explicit draft or approved mode after current authorization/dependency checks; return an authorized artifact reference, not an arbitrary filesystem path. |
+| `GET /v1/document-packages/{id}/artifacts/{artifact_id}` | Reauthorize access to a specific immutable exported file; surface draft, superseded, or needs-review status. |
 | `POST /v1/reviews/{id}/decision` | Authorized approve/reject decision, expected proposal revision, audit event, workflow resume. |
 | `DELETE /v1/documents/{id}` | Privileged tombstone/retention workflow; explicit erasure scope, async physical cleanup, auditable status. |
 | `/health/live`, `/health/ready` | Process liveness versus required dependency readiness. Missing optional graph/reranker capability is reported separately. |
 
 Query requests specify corpus, optional version/as-of date, and bounded output budget; tenant identity comes from authentication. Server policy caps caller-supplied limits. Error responses distinguish invalid input, forbidden scope, unsupported capability, insufficient evidence, transient dependency failure, and exhausted budget. Logs use request/run/job IDs consistently.
 
-Planned CLI verbs: `doctor`, `ingest`, `job`, `query`, `source`, `evaluate`, and explicit admin-only `migrate`/`reconcile`. Share implementation with API handlers; avoid a second retrieval pipeline.
+Planned CLI verbs: `doctor`, `ingest`, `job`, `query`, `source`, `evaluate`, `document generate/inspect/export`, `review`, and explicit admin-only `migrate`/`reconcile`. Share implementation with API handlers; avoid a second retrieval or documentation pipeline.
 
 ## 8. Evaluation and release criteria
 
@@ -246,6 +280,7 @@ Required checks include:
 - Adversarial cases: prompt injection in source text, fabricated citations, same name across tenants/types, forbidden intermediate graph nodes, mixed-access summaries, SSRF paths, and revoked source access.
 - Crash/retry scenarios at write and publication boundaries, duplicate jobs, competing updates, parser timeout, model 429/5xx, dimension mismatch, graph outage, and empty evidence.
 - Retrieval ablations and prompt/model-version evaluations before promotion. Keep CI deterministic by default; opt-in hosted model evaluations are budgeted and separately reported.
+- Documentation evaluations: obligation-to-section coverage, grounded operating limits/roles, unresolved-gap reporting, cross-document consistency, site isolation, stale-review rejection, crash-safe export, and propagation of law/process changes. Run all three required document types on labelled synthetic site fixtures plus reviewed excerpts from the supplied draft examples. Require zero unsupported safety-critical limits and zero publication of unapproved or dependency-stale content. Long-document job budgets are measured separately from Q&A.
 
 ## 9. Security, cost, and operational requirements
 
@@ -260,7 +295,7 @@ Required checks include:
 
 ## 10. Decisions to validate, not blockers to writing code
 
-Phase 0 must establish hosted endpoint versions/authentication, Memgraph MAGE availability, parser job protocol, gateway aliases/limits, approved storage and Postgres availability, and the service region/data policy. Phase 1 needs representative raw documents and a reviewer for the benchmark. Before shared release, confirm identity provider, tenant/access model, expected document/page volume, concurrency, retention/legal hold, and operational owners.
+Phase 0 must establish hosted endpoint versions/authentication, Memgraph MAGE availability, parser job protocol, gateway aliases/limits, approved storage and Postgres availability, and the service region/data policy. Phase 1 has one raw PDF/JSON example; it still needs a reviewer for the benchmark and representative scanned/non-PDF inputs. Actual earlier compilations and delegated rules are also needed before claiming historical-law or rule-specific coverage. For documentation, register authoritative site/process inputs, licences/permits, manufacturer instructions, approved templates, document numbering, responsible reviewers, and effective-date rules. Existing draft examples are not substitutes for those approvals; the supplied form template is empty and some referenced manuals/regulations are absent. Before shared release, confirm identity provider, tenant/site/access model, expected document/page volume, concurrency, retention/legal hold, publication destination/access policy, and operational owners. `assets/publish` is the local export root, not permission to commit sensitive site documents or deploy a public file server.
 
 Until those facts are known, proceed with the stated single-organization defaults, local disposable development services, explicit capability reports, and no production writes. Keep parser selection and retrieval thresholds reversible. Defer multi-agent “teams,” arbitrary Cypher generation, fine-tuning, multimodal retrieval, automatic legal conflict resolution, and external control execution until a measured use case justifies them.
 

@@ -6,6 +6,12 @@ Follow the [implementation plan](./implementation_plan.md) for the current desig
 
 **Status:** application packaging, endpoints, migrations, and commands are planned, not implemented. The historical examples later in this document do not constitute a working deployment recipe.
 
+### Documentation Agent deployment boundary
+
+Run documentation jobs in the existing DocBrain worker with LangGraph checkpoints and LiteLLM calls; no additional hosted agent platform is required. Provision private export storage and designated site/process/compliance reviewers, with competent technical review for safety-critical documents. Local development exports use `assets/publish/<tenant-id>/<site-id>/<package-id>/<revision>/`; shared deployments use the artifact backend with the same logical layout and authorization rules. The supplied draft examples must not be overwritten or treated as approved inputs automatically.
+
+Do not expose `assets/publish` as a public static directory or commit generated sensitive site content by default. Authorize package/download endpoints, enforce root/path/symlink containment and least-privilege storage access, and recheck source permissions at delivery. Back up package files, evidence/approval manifests, registry current references, and pending review checkpoints together; rehearse interrupted export recovery. Law/process/site changes mark dependent packages needs-review. Distributed offline copies require an operator withdrawal process; deleting the managed export cannot recall them. Budget long document jobs independently from interactive Q&A, and stage only complete reviewed packages as current.
+
 ### Ownership and required access
 
 | Dependency | Supplied by operator | DocBrain responsibility |

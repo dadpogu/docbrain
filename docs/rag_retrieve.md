@@ -1,10 +1,12 @@
 # Stage 4: Query Routing, Multi-Index Retrieval, Fusion & Agentic CRAG
 
-A comprehensive technical guide for autonomous agents to route incoming compliance queries, retrieve across tri-focal representations, fuse disparate scores, build structured evidence bundles, and execute Corrective RAG (CRAG).
+A technical guide for agents to retrieve regulatory, process, and site evidence, build grounded answers, and generate site-specific policy/manual/procedure packages through the Documentation Agent.
 
 **Implementation status:** target behavior, not an end-to-end implemented broker. The [implementation plan](./implementation_plan.md) governs API contracts, authorization, manifest/version selection, score semantics, and evaluation. LangChain tools and LangGraph answering/review workflows live in this repository. Hosted Memgraph supplies graph storage; it does not own agent execution.
 
 **Workflow limits:** initially allow at most two corrective retrieval rounds and one answer-repair round within a total budget. Return partial/insufficient evidence explicitly. Automatic web-search fallback is disabled; the older diagram below shows a possible future opt-in connector. Citation existence and source support are separate checks, and unchecked streamed text must not be labelled verified.
+
+**Documentation requests:** use the same authorized broker but a separate checkpointed generation workflow, not the ordinary Q&A response path. Bind tenant/site/process and source roles before retrieval; templates and generated derivatives cannot become legal or site-fact authority. Long manuals use bounded per-section retrieval and package-wide budgets. See Section 8 and the [plan](./implementation_plan.md#documentation-agent-workflow-retrieve) for review/export contracts.
 
 **Architecture Reference:** [rag_architecture.md](./rag_architecture.md)  
 **Upstream Storage:** [rag_encode.md](./rag_encode.md) (Vector & RAPTOR) & [rag_extract.md](./rag_extract.md) (Knowledge Graph)
@@ -204,3 +206,31 @@ stateDiagram-v2
 The earlier 160 ms broker estimate was not benchmarked and did not account reliably for hosted model calls. Instrument routing, embeddings, per-store search, grounding, reranking, synthesis, and verification separately.
 
 Use the [plan's provisional release budgets](./implementation_plan.md#8-evaluation-and-release-criteria): p95 under 3 seconds for evidence retrieval and under 20 seconds for a normal verified answer, subject to validation at a declared corpus size, concurrency, region, and model profile. Corrective rounds have a separate bounded budget. Publish measured p50/p95, token usage, and cost; do not present these provisional targets as existing SLAs.
+
+## 8. Documentation Agent within RETRIEVE
+
+**Planned implementation:** `workflows/documentation.py` orchestrates LangChain model/tool calls via LangGraph; `documentation.py` validates/renders packages and prepares controlled exports. Reuse the broker, source resolver, jobs, registry, and review contracts. No second vector index or independent agent service is needed.
+
+### 8.1 Inputs and evidence separation
+
+A request identifies an authorized site/process, as-of date, document types (policy, manual, procedure), template revisions, and optional prior package. Tenant identity and permitted scope come from trusted context. Pin source/site/process revisions and separately retrieve:
+
+1. Regulatory obligations, permits, standards, and guidance, with their distinct authority and applicability status.
+2. Process steps, site roles/equipment, approved operating limits, and existing organizational requirements, with exact revision and review state.
+3. Templates for layout and existing draft/generated documents for explicitly labelled reference or revision comparison, not independent authority.
+
+Each section bundle includes source class/status, site/process scope, immutable spans, reviewed applicability decision IDs, missing/conflicting facts, and dependencies. Dense/sparse, graph expansion, summaries, and direct fetches enforce the same filters. Compression cannot discard a limit's unit, exception, prerequisite, or source role. An unavailable site licence or rule stays a gap; regulatory text and internal preferences are never merged simply because their wording is similar.
+
+### 8.2 Drafting and validation
+
+Plan a package outline and stable document IDs, then draft sections using a shared role/terminology register and obligation-to-section coverage map. Policy states commitments and accountabilities; manual explains the management system and links its procedures; procedures specify supported roles, prerequisites, steps, hold points, records, and escalation paths. This describes document structure, not permission to invent missing operational content.
+
+Every substantive statement must have immutable support or be marked as a proposed organizational control. Preserve uncertainties such as `torque x` and `[TBC]`; templates' example values are not defaults. Check evidence support, numeric/unit/modality fidelity, regulatory applicability, cross-document consistency, resolvable links, and critical gaps before requesting review. Source status can permit a provisional draft while still blocking operational approval. Budgeted retrieval/repair loops end with actionable gaps, not endless attempts to fill them from model memory.
+
+For the supplied P-001/WI-007 drafts, do not infer confirmed emergency locations, alarm settings, permit conditions, or manufacturer limits. The Recycling Act alone does not prove which duties apply at the site. D01–D10 in the [backlog](./coding_tasks.md#documentation-examples-and-acceptance-scenarios) cover these failure cases and a corrected synthetic positive case.
+
+### 8.3 Review, export, and later changes
+
+Use the existing authenticated approval API and LangGraph interrupts for site/process and compliance review, plus competent technical review of safety-critical content. Decisions bind the exact content/dependency hashes. Missing critical evidence, changed inputs, rejected proposals, or revoked reviewer permissions prevent publication; a source instruction or model judge cannot approve anything.
+
+The application exports Markdown packages under `assets/publish/<tenant-id>/<site-id>/<package-id>/<revision>/` with a manifest, evidence map, and review/gap record. Draft exports carry a not-for-operational-use label and are never current approved output. Staged complete exports become current only through the registry after approval and current-dependency checks; the model does not write files. Preserve supplied examples and previous revisions. Source updates mark dependent packages needs-review and generate a diff proposal; no silent regeneration or automatic ingestion of generated files. Artifact downloads recheck scope and revocation. Full API and filesystem contracts are defined in the implementation plan; PDF/DOCX export and external distribution are not initial requirements.

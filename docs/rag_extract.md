@@ -6,6 +6,10 @@ A comprehensive guide for autonomous agents to extract typed entities, construct
 
 **Interpretation boundary:** examples are synthetic, not verified mappings to ISO/NIST requirements. Extract source requirements separately from inferred risks and proposed controls. A control becomes approved organizational policy only after review. Slugs are aliases; tenant, entity type, source context, and resolution decisions determine identity.
 
+**Site documentation extension:** process descriptions and site documents contribute versioned facts about activities, equipment, roles, prerequisites, and operating limits, each carrying source class, scope, and review state. Model `Site`, `Process`, `DocumentSection`, and reviewed requirement-to-site applicability alongside the four-tier model. A template example or draft process statement cannot become an approved fact merely by extraction. Preserve applicable/not-applicable/undetermined decisions with rationale, source spans, and reviewer provenance; unresolved law/permit/process conflicts remain review items.
+
+The Documentation Agent links approved requirements → controls → generated policy/manual/procedure sections, and separately links those sections to supporting site/process facts. Track source, template, and applicability revisions in the dependency ledger. Both legal changes and site/process changes invalidate affected generated sections; outputs retain derivative lineage and cannot prove their own source obligations. DB-031–DB-035 in the [backlog](./coding_tasks.md) define this extension; the ontology examples below remain illustrative and incomplete.
+
 **Architecture Reference:** [rag_architecture.md](./rag_architecture.md)  
 **Upstream Input:** [rag_parse.md](./rag_parse.md) (Parsed & Normalized Assertions)  
 **Downstream Storage & Retrieval:** [rag_encode.md](./rag_encode.md) & [rag_retrieve.md](./rag_retrieve.md)
@@ -243,3 +247,4 @@ RETURN concept.id, req.id, ctrl.id, wf.id
    - List of affected Controls, Risks, and Operational SOPs.
    - Recommended procedural updates.
 3. **No operational workflow or control is automatically changed in production without human compliance officer sign-off.**
+4. Generated document packages with changed dependencies become `needs_review`; retain previous content, surface affected sections and a proposed diff, and obtain site/process plus compliance review (and competent technical review for safety-critical content). Do not silently update `assets/publish`, replace human edits, or continue to present stale packages as current validated guidance. Review and export use the shared registry contracts in the implementation plan.
