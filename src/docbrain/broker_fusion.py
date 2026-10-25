@@ -31,7 +31,7 @@ class RetrievalBroker:
         Combines ranked lists from disparate stores using Weighted Reciprocal Rank Fusion.
         RRF_score(d) = sum(w_s * (1 / (k + rank_s(d))))
         """
-        rrf_scores = defaultdict(float)
+        rrf_scores: Dict[str, float] = defaultdict(float)
         candidate_items = {}
 
         for store_name, items in ranked_lists.items():
@@ -87,7 +87,7 @@ class RetrievalBroker:
         Prunes passages with extreme text overlap (e.g., child chunks overlapping section summaries).
         """
         deduped = []
-        seen_texts = []
+        seen_texts: List[set] = []
 
         for c in candidates:
             text = c["text"]

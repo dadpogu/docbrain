@@ -1,0 +1,10 @@
+{
+  "_comment": "Frozen hashes of supplied draft examples used as reference inputs (DB-031). These files are read-only; the LF variant is the repository index form, the CRLF variant is the supplied working copy.",
+  "assets": {
+    "assets/publish/processes/p01-high-level-process.md": ["e0681a45574b43a283395dea8aeca9ccb97abd989ec26c776cc2c5d4a98f6fe3"],
+    "assets/publish/work-instructions/w07-emergency-shutdown.md": ["d9548a3d079511db5ab5a7c645dd598f1b252613cf1c9a663f0e3818a9d35b4b"],
+    "assets/publish/processes/p00-process-template.md": ["f1352f666f6685f07ca76b1945b350c9a0c7b20181f752f41a68a4c37e8c997b", "0850bbbb568d3d11c33252f6adee8874e6a1f55926301827215178e55f09afe5"],
+    "assets/publish/work-instructions/w00-work-instruction-template.md": ["46919975c2b8b13a618b5393b6fb295d55f6375fabd09b36ce6b09e6699733a2", "56fb230331d0b135abc33c0a100b7f9fad7e30ef8b19de17b3f997ab97bd7a2e"],
+    "assets/publish/forms/f00-form-template.md": ["e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"]
+  }
+}

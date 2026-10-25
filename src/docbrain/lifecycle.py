@@ -30,7 +30,7 @@ class DocumentLifecycleManager:
         3. Prunes Neo4j entity/relationship provenance and sweeps orphan nodes.
         4. Evicts related semantic cache entries.
         """
-        results = {"doc_id": doc_id, "status": "success", "purged": {}}
+        results: Dict[str, Any] = {"doc_id": doc_id, "status": "success", "purged": {}}
 
         # Step 1: Purge Vector Store Chunks
         if self.qdrant:

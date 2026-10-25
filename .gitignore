@@ -125,3 +125,10 @@ nosetests.xml
 #     common/build.gitignore \
 #     common/logs.gitignore \
 #     ides/visual-studio-code.gitignore | sort -u > .gitignore
+
+# Local configuration and secrets (never commit credentials)
+.env
+.env.*
+!.env.example
+*.pem
+*.key

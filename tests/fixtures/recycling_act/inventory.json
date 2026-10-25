@@ -1,0 +1,80 @@
+{
+  "_comment": "DB-003 fixture inventory for the Recycling and Waste Reduction Act 2020 example. Supplied assets are read-only; nothing here replaces them.",
+  "document": {
+    "authority": "au",
+    "principal_identifier": "C2020A00119",
+    "claimed_official_id": "C2026C00317",
+    "title": "Recycling and Waste Reduction Act 2020"
+  },
+  "artifacts": [
+    {
+      "id": "PDF",
+      "path": "assets/raw/GLOBAL.AU/Recycling and Waste Reduction Act 2020/C2026C00317.pdf",
+      "role": "original",
+      "media_type": "application/pdf",
+      "physical_pages": 213,
+      "status": "original source bytes",
+      "sha256_variants": {
+        "supplied": "998e9f4ed2390e3bd3f557552b405cbd1934198f5e4c3095649da45aa0c0b465"
+      }
+    },
+    {
+      "id": "JSON",
+      "path": "assets/raw/GLOBAL.AU/Recycling and Waste Reduction Act 2020/C2026C00317.json",
+      "role": "metadata_sidecar",
+      "media_type": "application/json",
+      "status": "provider metadata (claims, not verified facts)",
+      "sha256_variants": {
+        "supplied_crlf": "695bbe04269b42c36ca79bf086b14ec24c56c550ecdc1e604ff7689ac5ea42f2",
+        "repository_lf": "a0ed4ce20ef67177ae809b451952daf8a8c39dde64d6ab2d351b46f0e84bd30e"
+      }
+    },
+    {
+      "id": "MD",
+      "path": "assets/parsed/GLOBAL.AU/C2020A00119-recycling-and-waste-reduction-act-2020.md",
+      "role": "imported_rendering",
+      "media_type": "text/markdown",
+      "status": "candidate rendering; not ground truth",
+      "parser_lineage": "unknown",
+      "sha256_variants": {
+        "supplied_crlf": "ee0aa90bcc0fc78800ad67f88c8201e640f6bbdef7b47edf6ccc7d15bf2f1949",
+        "repository_lf": "bfd7f6124749acb0b2f362cc0da4186ef3d845ff13b91ae134142ab867767e80"
+      }
+    },
+    {
+      "id": "LITE",
+      "path": "assets/parsed/GLOBAL.AU/C2026C00317.md",
+      "role": "imported_rendering",
+      "media_type": "text/markdown",
+      "status": "candidate rendering; not ground truth",
+      "parser_lineage": "LiteParse (user-supplied attribution); engine version, options, timing and native response unknown",
+      "sha256_variants": {
+        "supplied": "b2700d01f4b586464ada341751f4404fc0eefac4881ac365bf9775117bc6cf7a"
+      }
+    }
+  ],
+  "line_ending_note": "The repository index stores JSON and MD with LF line endings. The supplied working copy (and the fingerprints in docs/coding_tasks.md) uses CRLF. Each byte form is a distinct artifact; tests accept either recorded variant and parse both.",
+  "reviewed_source_facts": [
+    {
+      "field": "registration_date",
+      "value": "2026-07-21",
+      "evidence": "PDF page footer 'Authorised Version C2026C00317 registered 21/07/2026' (physical pages 13, 31, 175 and others)",
+      "status": "mechanically confirmed; human review pending"
+    }
+  ],
+  "review_provenance": {
+    "method": "Mechanical comparison against the PDF text layer extracted with pypdf 6.21.2 (1-based physical pages). All 188 section headings were found in order in pages 13-213; each section-151 person and decision cell was found on pages 175-178, with items 7, 14 and 22 continuing onto the next page.",
+    "performed_by": "Amp agent (thread T-01a172b0-0a2a-75cb-8e99-d1934bd026ac)",
+    "date": "2026-10-25",
+    "human_review": "pending: expectations remain candidate fixtures until a designated reviewer signs them off"
+  },
+  "gaps": [
+    "No Docling output for comparison",
+    "No LiteParse run profile, engine version, settings, or native response",
+    "No native PDF coordinates for either Markdown candidate",
+    "No scanned-PDF, DOCX, HTML, malformed, encrypted, or oversized source fixtures",
+    "No earlier official compilation of this Act (historical as-of questions cannot be validated)",
+    "No delegated rules referenced by sections 17, 18, 77 and 142",
+    "The external National Environmental Protection Agency Act 2025 is not in the corpus"
+  ]
+}

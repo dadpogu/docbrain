@@ -9,11 +9,17 @@ graph TD
     docbrain --> assets
     docbrain --> docs
     docbrain --> src
+    docbrain --> tests
+    docbrain --> evals
+    src --> pkg[docbrain package]
     assets --> raw
     assets --> parsed
     assets --> cleaned
 ```
 
+- `/src/docbrain` Installable package (`pyproject.toml`, `uv.lock`): prototype modules plus offline domain models, Markdown parsing, references, registry, templates, and workflow logic. See the implementation status in the [coding backlog](./coding_tasks.md#implementation-status).
+- `/tests` Offline unit tests and reviewed fixtures. Run `uv sync`, then `uv run pytest`, `uv run ruff check src tests`, and `uv run mypy`.
+- `/evals` Structured evaluation cases (Recycling Act E01–E20).
 - `/assets/raw` PDF, DOCX, HTML original documents stored in folders with json metadata sidecar.
 - `/assets/parsed` Text, Markdown, JSON documents after parsing original documents.
 - `/assets/cleaned` Manually cleaned documents after parsing.
@@ -91,11 +97,11 @@ Markdown is the initial export format. Server-issued IDs determine paths; packag
 
 | Existing module | Preserve or extend | Required change before production use |
 | --- | --- | --- |
-| `src/models.py` | Typed evidence and provenance concepts | Version/build/scope identity, source spans, dual text, validated schemas. |
-| `src/router.py` | Intent labels and dispatch concept | Import fixes, mixed-intent behavior, capability-aware bounded fallback. |
-| `src/broker_fusion.py` | Weighted RRF and evidence packaging | Real retrieval/grounding, adapter-normalized candidates, explicit score semantics and token accounting. |
-| `src/semantic_tree.py` | Summary construction and search concept | Parent links, empty/single-chunk cases, corpus roots, persistence and invalidation. |
-| `src/graph_engine.py` | Extraction and provenance concepts | Regulatory ontology, safe resolution, Memgraph adapter, idempotent writes and actual scoped community jobs. |
-| `src/lifecycle.py` | Hash comparison and cleanup intent | Full pagination, immutable builds, manifest publication, retained history and retryable cleanup. |
+| `src/docbrain/models.py` | Typed evidence and provenance concepts | Version/build/scope identity, source spans, dual text, validated schemas. |
+| `src/docbrain/router.py` | Intent labels and dispatch concept | Import fixes, mixed-intent behavior, capability-aware bounded fallback. |
+| `src/docbrain/broker_fusion.py` | Weighted RRF and evidence packaging | Real retrieval/grounding, adapter-normalized candidates, explicit score semantics and token accounting. |
+| `src/docbrain/semantic_tree.py` | Summary construction and search concept | Parent links, empty/single-chunk cases, corpus roots, persistence and invalidation. |
+| `src/docbrain/graph_engine.py` | Extraction and provenance concepts | Regulatory ontology, safe resolution, Memgraph adapter, idempotent writes and actual scoped community jobs. |
+| `src/docbrain/lifecycle.py` | Hash comparison and cleanup intent | Full pagination, immutable builds, manifest publication, retained history and retryable cleanup. |
 
 Application code owns domain behavior and LangGraph workflows. Adapters own external protocols and SDK objects. Registry transactions own publication/approval decisions. Hosted service administration remains outside this repository's runtime responsibilities.

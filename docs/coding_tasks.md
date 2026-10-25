@@ -1,6 +1,6 @@
 # DocBrain coding backlog: regulatory knowledge and site documentation
 
-Status: **planned, not implemented**. All 35 task checkboxes are open. This backlog turns the [implementation plan](./implementation_plan.md) into coding increments using supplied legislation and draft site-document examples. Synthetic fixtures are explicitly identified. No service writes, operational document generation, or application changes were made to create it. DB-001–DB-030 retain their IDs; DB-031–DB-035 add mixed-source ingestion and the Documentation Agent.
+Status: **in progress** (2026-10-25). Six task checkboxes are closed with offline acceptance evidence; see [implementation status](#implementation-status). Remaining tasks are open. This backlog turns the [implementation plan](./implementation_plan.md) into coding increments using supplied legislation and draft site-document examples. Synthetic fixtures are explicitly identified. No service writes, operational document generation, or application changes were made to create it. DB-001–DB-030 retain their IDs; DB-031–DB-035 add mixed-source ingestion and the Documentation Agent.
 
 ## 1. The example is a versioned legal document, not a text file
 
@@ -124,6 +124,37 @@ The [process template](../assets/publish/processes/p00-process-template.md) and 
 
 DB-031 freezes reviewed source excerpts and labelled synthetic site pairs; DB-035 runs these scenarios through the public documentation workflow. Legal correctness and plant safety require designated reviewers, not just model judges.
 
+## Implementation status
+
+Offline work only: no hosted parser, model gateway, Qdrant, Memgraph, or PostgreSQL service was contacted, and no service writes were made. Run the checks with `uv sync` and then `uv run pytest`, `uv run ruff check src tests`, and `uv run mypy`.
+
+| Task | State | Evidence and remaining gap |
+| --- | --- | --- |
+| DB-001 | Done | `src/docbrain/` package, `pyproject.toml`, `uv.lock`, CI workflow, secret exclusions. Moved modules keep their imports; `router.py` imports `Any`. `tests/unit/test_prototype_package.py` checks chunk identity and asymmetric weighted RRF against hand-computed values. A clean wheel install imports. |
+| DB-003 | Partial | `tests/fixtures/recycling_act/` records all four artifacts, their CRLF/LF hashes, the expected structure, and the 28 section-151 tuples. Section headings and tuples were checked mechanically against the PDF text layer (pypdf). `evals/recycling_act/cases.json` structures E01–E20. **Gap:** human reviewer sign-off and coordinates from an actual PDF extraction. |
+| DB-004 | Done | `models.py`: tenant-scoped document keys, official versions, legal time, artifacts and derivations, multi-span `SourceSpan` with page and coordinate fields, reference statuses, deterministic UUID point IDs. |
+| DB-005 | Done | `parsing.py`: validated sidecar and front-matter metadata, cover and footer facts, per-field claim reconciliation with reviewable conflicts, `legal_time_from`. A metadata-less import without a manifest stays unresolved. |
+| DB-006 | Done (local) | `adapters/artifacts.py` content-addressed blob store; `registry.py` scoped artifact records, lineage, corrections with diffs, and authorized excerpts. **Gap:** the hosted storage backend is not yet known. |
+| DB-007 | Done | `parse_legislation_markdown` builds the section tree from legal numbering. It keeps page furniture as metadata and records printed page labels from footer text only. Inventory comparison reports that LiteParse omits section 120. |
+| DB-008 | Partial | Offline inventory and table-status comparison of the two Markdown candidates only. **Gap:** parser service runs, the adapter, and benchmarks. |
+| DB-009 | Done | HTML and pipe tables with header-based cell lookup, row keys, colspans, and per-cell spans. Detached columns and stray rows become unresolved fragments that are excluded from evidence. |
+| DB-010 | Partial | `references.py` resolves local, table-item, external, and repealed references, plus scoped definitions. List connectives (and/or) are recorded. **Gap:** "except" and "earliest of" semantics, and retrieval through references (DB-014). |
+| DB-011 | Partial | Durable job leases, heartbeats, attempt budgets, cancellation, and resumable stages in SQLite, used by `workflows/ingestion.py`. **Gap:** chunking, a PostgreSQL job table, LangGraph checkpoints, and the worker loop. |
+| DB-025 | Partial | `workflows/change_review.py` binds approve/reject decisions to revision, content hash, and dependency hash. It rejects self-approval, stale, and replayed decisions, cannot waive blockers, and requires a technical reviewer when safety-critical. Decisions survive restart. **Gap:** change dossier, API authentication, and LangGraph interrupts. |
+| DB-031 | Partial | Source roles, site scopes (an unresolved scope is never shared), claimed versus verified approval, derivative lineage, document findings, template validation and leakage checks, frozen asset hashes, and two synthetic site packs. **Gap:** chunk-level role separation (DB-011) and effective dates. |
+| DB-033/034 | State logic only | `workflows/documentation.py` package revisions: draft → in_review → approved → published, plus needs_review and rejected. **Gap:** generation, rendering, and export. |
+
+Prototype limitations recorded during DB-001, left unchanged:
+
+- `broker_fusion.compute_weighted_rrf` mutates its input items, so `found_in_stores` accumulates across calls. The reranker fallback labels a normalized RRF rank as a "calibrated" score. Jaccard deduplication can merge the near-identical section 21/22 offences, and token counts are estimated as words × 1.3.
+- `router.QueryRouter` picks the first matching regex and hard-codes a historical model name.
+- `semantic_tree` needs scikit-learn, which is not a dependency, for clustering. It writes no parent links.
+- `graph_engine` maps unknown types to `Organization`/`PARTNERS_WITH`, depends on APOC/GDS, merges entities by slug, and inflates relationship weights on replay.
+- `lifecycle` uses Neo4j/APOC Cypher, reads only the first 1,000 scrolled points, and matches chunks by `doc_id#` prefix.
+- Prototype `CanonicalChunk` IDs are not version- or build-scoped, and `EvidenceBundle` uses the deprecated `datetime.utcnow`.
+
+The other six supplied Acts parse without errors. They still produce reference and duplicate-numbering warnings (EPBC: 77 unresolved references, 61 duplicate keys) that have not been reviewed.
+
 ## 3. Coding sequence and completion rules
 
 All paths below refer to the target `src/docbrain/` package unless prefixed otherwise. Reuse the current modules through the migration map in [project structure](./project_structure.md). Tests target public contracts/results rather than private helper calls. Keep constants such as 188 sections, 28 items, and source hashes in fixture expectations, never application branches.
@@ -146,7 +177,7 @@ The first end-to-end demo is **E10**: ingest the Act, retrieve 142(2)(c), cite t
 
 #### DB-001 — Package and characterize the prototype
 
-- [ ] **Depends on:** none. **Files:** `pyproject.toml`, lockfile, `src/docbrain/`, `tests/unit/`, CI configuration.
+- [x] **Depends on:** none. **Files:** `pyproject.toml`, lockfile, `src/docbrain/`, `tests/unit/`, CI configuration.
 - Move current public components into an installable package in a behavior-preserving step; repair import/type errors and retain supported imports deliberately. Add offline test, lint, and type-check commands. Add secret exclusions before creating local configuration.
 - **Accept:** clean-environment install/import succeeds; pure chunk identity and asymmetric weighted-RRF examples have independently computed expected outputs; no hosted credentials are needed for offline tests. Record prototype limitations instead of changing algorithms during the move.
 
@@ -166,26 +197,26 @@ The first end-to-end demo is **E10**: ingest the Act, retrieve 142(2)(c), cite t
 
 #### DB-004 — Define immutable identity, legal-time, and provenance contracts
 
-- [ ] **Depends on:** DB-001, DB-003. **Files:** `models.py`, `tests/unit/`.
+- [x] **Depends on:** DB-001, DB-003. **Files:** `models.py`, `tests/unit/`.
 - Add logical document, official version, artifact, parse/build, block, source span, reference, evidence, and scope models. For the example, namespace `C2020A00119` by tenant/authority and associate official compilation `C2026C00317`; readable examples may look like `au:C2020A00119/C2026C00317/s153(2)(b)`. Actual chunk IDs also include build identity. Define UUID point mapping independently of display IDs.
 - Record source-effective, compilation, registration, retrieval, and observed timestamps separately; allow unknown interval ends. Support multiple spans per evidence item, physical page index, printed page label, coordinate system, and immutable text-artifact offsets. References may be resolved, external-unavailable, ambiguous, or explicitly repealed.
 - **Accept:** E01/E16; moving/renaming the raw folder leaves document identity intact; altered source bytes create a new artifact and conflicting claims about one official source require review. Different parser renderings are distinct derivations of the same claimed official version, not by themselves conflicting legal versions. `65A`, `65B`, and two tenants' section 153 IDs never collide. Validate source span boundaries against their artifact, not normalized text.
 
 #### DB-005 — Import and reconcile legislation metadata
 
-- [ ] **Depends on:** DB-004. **Files:** `parsing.py`, `registry.py`, metadata tests.
+- [x] **Depends on:** DB-004. **Files:** `parsing.py`, `registry.py`, metadata tests.
 - Read the sibling JSON and Markdown YAML safely; validate scalar types and field meanings. Accept metadata-less LiteParse Markdown with an explicit manifest linking its checksum to the raw PDF/JSON and claimed version; do not search by basename and silently attach a sidecar. Preserve provider metadata separately from verified cover/footer facts. Support spaces in paths. Treat `/latest/text` as a source alias, not an immutable version identity or permission to fetch current content.
 - **Accept:** supplied JSON/front matter and LiteParse cover facts reconcile without conflict; intentionally changed `register_id`, compilation date, or title produces a reviewable conflict, not silent precedence. An unassociated metadata-less import remains unresolved rather than acquiring identity from its filename. `2020-12-15`, `2026-07-01`, `2026-07-21`, and `2026-10-11` keep distinct meanings. Importing either Markdown does not assert a verified parser run or fabricate per-page spans.
 
 #### DB-006 — Store immutable source and derived artifacts
 
-- [ ] **Depends on:** DB-004, DB-005. **Files:** `adapters/artifacts.py`, `registry.py`, storage migrations, adapter tests.
+- [x] **Depends on:** DB-004, DB-005. **Files:** `adapters/artifacts.py`, `registry.py`, storage migrations, adapter tests.
 - Save original bytes, sidecars, parser responses, canonical text, and corrections with checksums and lineage. Start with a local adapter and the supplied hosted storage backend when known. Keep large artifacts outside workflow checkpoints; create safe, scoped source references rather than arbitrary local paths.
 - **Accept:** duplicate bytes reuse content storage without merging tenant permissions; a corrected Markdown revision retains the original and its diff. Retrieved excerpts match immutable text spans byte/text-for-text under the documented encoding. Path traversal and unauthorized artifact reads fail before content is returned.
 
 #### DB-007 — Parse the supplied mixed Markdown into canonical blocks
 
-- [ ] **Depends on:** DB-004, DB-005, DB-006. **Files:** `parsing.py`, focused parser tests.
+- [x] **Depends on:** DB-004, DB-005, DB-006. **Files:** `parsing.py`, focused parser tests.
 - Implement a real Markdown/HTML parsing path for both candidates, preserving headings, inline definitions, lists, HTML/pipe tables, and source offsets. Separate compilation notes/contents/body/endnotes and retain page furniture as source metadata rather than substantive provisions. Preserve legal numbering independent of Markdown depth or line starts; retain unnumbered offence/exception labels within their section. Keep mappings from normalized blocks to original artifact spans even when removing repeated furniture or joining lines. Record unresolved structure rather than inventing it.
 - **Accept:** earlier structured Markdown yields five chapters and 188 section nodes, including 65A/65B and no operative 122/187 nodes; compare the LiteParse tree against those independently reviewed identifiers and report omissions/duplicates. A second synthetic fixture with different counts still parses. Section 76's full ancestry and section 171's shorter ancestry are correct. LiteParse's inline `142(2)`/`153(2)` are distinct from preceding paragraphs; references such as `subsection (1)` do not become new clauses. `20(1)(a)` and `21(1)(a)` remain distinct; CRLF and Unicode non-breaking hyphens do not break lookup or source spans. The missing image produces a warning without an implicit fetch; page separators alone never establish PDF coordinates.
 
@@ -197,7 +228,7 @@ The first end-to-end demo is **E10**: ingest the Act, retrieve 142(2)(c), cite t
 
 #### DB-009 — Preserve table semantics and source classifications
 
-- [ ] **Depends on:** DB-003, DB-007. **Files:** `parsing.py`, table fixtures/tests.
+- [x] **Depends on:** DB-003, DB-007. **Files:** `parsing.py`, table fixtures/tests.
 - Define canonical cells, header relationships, row keys, spanning cells, per-cell provenance, and explicit unresolved table fragments; implement the supplied HTML/Markdown tables first. DB-008 maps PDF continuations to this contract and must stitch them only with structural evidence. Detached columns, blank cells followed by prose, and interrupted rows must not be silently zipped or filled from another candidate. Re-extraction or human correction creates a new derived artifact with supporting source spans and review provenance. Keep classifications for body provisions, definitions, notes, simplified outlines, compilation information, and amendment history; do not assume every table or explanatory-looking block is normative law.
 - **Accept:** section 151 retains exactly 28 correctly associated item records in the earlier structured Markdown; item 13's multi-person list stays in its own cell. Section 106 retains eight items and their conditional grounds. Section 2 separates the operative commencement rule from column 3's explicitly non-Act information (E02/E07). LiteParse's unresolved section-151 fragments are visible in source inspection but excluded from table-derived answer/graph evidence; section 2's interleaved text cannot pass solely because all words are present. Include a synthetic misordered-column case where naive positional pairing gives the wrong person/decision result. Endnote abbreviation-table line wrapping does not create fake obligations. This task can close without a parser endpoint; PDF continuation parity is a separate DB-008 gate.
 

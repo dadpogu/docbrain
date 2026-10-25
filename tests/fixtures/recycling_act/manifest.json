@@ -1,0 +1,65 @@
+{
+  "authority": "au",
+  "identifier": "C2020A00119",
+  "official_id": "C2026C00317",
+  "title": "Recycling and Waste Reduction Act 2020",
+  "jurisdiction": "au",
+  "language": "en",
+  "source_role": "regulatory_authority",
+  "authority_subtype": "law",
+  "artifacts": [
+    {
+      "sha256": "998e9f4ed2390e3bd3f557552b405cbd1934198f5e4c3095649da45aa0c0b465",
+      "role": "original",
+      "media_type": "application/pdf",
+      "relation": "original_pdf",
+      "path": "assets/raw/GLOBAL.AU/Recycling and Waste Reduction Act 2020/C2026C00317.pdf"
+    },
+    {
+      "sha256": "695bbe04269b42c36ca79bf086b14ec24c56c550ecdc1e604ff7689ac5ea42f2",
+      "role": "metadata_sidecar",
+      "media_type": "application/json",
+      "relation": "metadata_sidecar",
+      "path": "assets/raw/GLOBAL.AU/Recycling and Waste Reduction Act 2020/C2026C00317.json"
+    },
+    {
+      "sha256": "a0ed4ce20ef67177ae809b451952daf8a8c39dde64d6ab2d351b46f0e84bd30e",
+      "role": "metadata_sidecar",
+      "media_type": "application/json",
+      "relation": "metadata_sidecar_lf",
+      "path": "assets/raw/GLOBAL.AU/Recycling and Waste Reduction Act 2020/C2026C00317.json"
+    },
+    {
+      "sha256": "ee0aa90bcc0fc78800ad67f88c8201e640f6bbdef7b47edf6ccc7d15bf2f1949",
+      "role": "imported_rendering",
+      "media_type": "text/markdown",
+      "relation": "imported_markdown_candidate",
+      "path": "assets/parsed/GLOBAL.AU/C2020A00119-recycling-and-waste-reduction-act-2020.md",
+      "derivation": {"method": "imported_markdown", "attribution": "earlier structured Markdown; parser unknown"}
+    },
+    {
+      "sha256": "bfd7f6124749acb0b2f362cc0da4186ef3d845ff13b91ae134142ab867767e80",
+      "role": "imported_rendering",
+      "media_type": "text/markdown",
+      "relation": "imported_markdown_candidate_lf",
+      "path": "assets/parsed/GLOBAL.AU/C2020A00119-recycling-and-waste-reduction-act-2020.md",
+      "derivation": {"method": "imported_markdown", "attribution": "earlier structured Markdown; parser unknown"}
+    },
+    {
+      "sha256": "b2700d01f4b586464ada341751f4404fc0eefac4881ac365bf9775117bc6cf7a",
+      "role": "imported_rendering",
+      "media_type": "text/markdown",
+      "relation": "liteparse_markdown_candidate",
+      "path": "assets/parsed/GLOBAL.AU/C2026C00317.md",
+      "derivation": {"method": "liteparse_export", "tool": "LiteParse", "attribution": "user-supplied attribution; version and options unknown"}
+    }
+  ],
+  "reviewed_facts": [
+    {
+      "field": "registration_date",
+      "value": "2026-07-21",
+      "reviewer": "Amp agent (mechanical PDF text-layer check; human review pending)",
+      "note": "PDF footer: Authorised Version C2026C00317 registered 21/07/2026"
+    }
+  ]
+}

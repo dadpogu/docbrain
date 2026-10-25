@@ -3,7 +3,7 @@ Query Intent Classifier & Adaptive Store Router.
 Addresses Gap 2: Preventing 3x Query Amplification via Intent Routing & Fallback.
 """
 
-from typing import List, Dict, Tuple, Optional
+from typing import Any, List, Dict, Tuple, Optional
 import json
 import re
 from .models import QueryIntent

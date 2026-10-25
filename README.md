@@ -13,4 +13,8 @@ DocBrain is a compliance-focused hybrid RAG system. It aims to turn regulatory d
 
 Provenance ties the system together: summaries and graph relationships reference supporting chunks, allowing answers to trace back to source passages rather than rely solely on generated summaries.
 
-The repository separates document preparation into assets/raw, assets/parsed, and assets/cleaned. docs/ describes the lifecycle; src/ contains models, routing, summary-tree construction/search, graph extraction, evidence fusion, and document lifecycle handling.
+The repository separates document preparation into assets/raw, assets/parsed, and assets/cleaned. docs/ describes the lifecycle; src/docbrain/ contains models, routing, summary-tree construction/search, graph extraction, evidence fusion, and document lifecycle handling.
+
+## Development
+
+Install with `uv sync`. Run the offline checks with `uv run pytest`, `uv run ruff check src tests`, `uv run ruff format --check src tests`, and `uv run mypy`. No hosted services are contacted.

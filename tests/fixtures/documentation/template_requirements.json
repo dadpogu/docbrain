@@ -1,0 +1,6 @@
+{
+  "_comment": "Reviewed structural requirements for templates (synthetic reviewer). The empty form template cannot satisfy any of these.",
+  "work_instruction": {"template_kind": "work_instruction", "required_sections": ["Safety & PPE (Critical for Pyrolysis)", "Tools & Equipment", "Step-by-Step Procedure", "Troubleshooting", "Records to Complete", "Revision History"], "reviewed_by": "synthetic-reviewer", "reviewed_on": "2026-10-25"},
+  "process": {"template_kind": "process", "required_sections": ["Purpose", "Scope", "Inputs & Outputs", "Process Flow (High Level)", "Roles & Responsibilities", "Related Documentation"], "reviewed_by": "synthetic-reviewer", "reviewed_on": "2026-10-25"},
+  "form": {"template_kind": "form", "required_sections": ["Record Details", "Entries", "Sign-off"], "reviewed_by": "synthetic-reviewer", "reviewed_on": "2026-10-25"}
+}

@@ -1,0 +1,13 @@
+{
+  "_comment": "Labelled SYNTHETIC site pack (DB-031). Two fictional sites with asymmetric roles, equipment and limits, plus one shared corporate policy. 'reviewed' means reviewed as a test fixture, not approved plant documentation.",
+  "tenant_id": "synthetic-org",
+  "sources": [
+    {"path": "site_a/p100-pot-cycle.md", "role": "process_description", "site": "site-a", "review": "reviewed synthetic fixture"},
+    {"path": "site_b/p100-pot-cycle.md", "role": "process_description", "site": "site-b", "review": "reviewed synthetic fixture"},
+    {"path": "shared/pol-001-records.md", "role": "organizational_policy", "shared_with": ["site-a"], "review": "reviewed synthetic fixture"}
+  ],
+  "expected": {
+    "site-a": {"roles": ["Shift Supervisor", "Kiln Operator"], "equipment": ["Kiln K-1"], "lid_opening_limit": "<55°c"},
+    "site-b": {"roles": ["Lead Operator"], "equipment": ["Kiln K-7", "Kiln K-8"], "lid_opening_limit": "<45°c"}
+  }
+}
