@@ -2,13 +2,11 @@
 
 A comprehensive guide for autonomous agents to extract typed entities, construct multi-tier regulatory knowledge graphs, derive risks and controls, and manage audit-safe evolution.
 
-**Implementation status:** target domain model, not the ontology currently implemented by `graph_engine.py`. The [implementation plan](./implementation_plan.md) governs versioned assertions, access scope, publication, and review. Use hosted **Memgraph** with tested Bolt/Cypher compatibility; Neo4j APOC/GDS calls are not portable assumptions. Leiden requires a verified scoped MAGE capability or an offline snapshot job.
+**Implementation status:** target domain model, not the ontology currently implemented by `graph_engine.py`. The [implementation plan](../plans/implementation_plan.md) governs versioned assertions, access scope, publication, and review. Use hosted **Memgraph** with tested Bolt/Cypher compatibility; Neo4j APOC/GDS calls are not portable assumptions. Leiden requires a verified scoped MAGE capability or an offline snapshot job.
 
 **Interpretation boundary:** examples are synthetic, not verified mappings to ISO/NIST requirements. Extract source requirements separately from inferred risks and proposed controls. A control becomes approved organizational policy only after review. Slugs are aliases; tenant, entity type, source context, and resolution decisions determine identity.
 
-**Site documentation extension:** process descriptions and site documents contribute versioned facts about activities, equipment, roles, prerequisites, and operating limits, each carrying source class, scope, and review state. Model `Site`, `Process`, `DocumentSection`, and reviewed requirement-to-site applicability alongside the four-tier model. A template example or draft process statement cannot become an approved fact merely by extraction. Preserve applicable/not-applicable/undetermined decisions with rationale, source spans, and reviewer provenance; unresolved law/permit/process conflicts remain review items.
-
-The Documentation Agent links approved requirements → controls → generated policy/manual/procedure sections, and separately links those sections to supporting site/process facts. Track source, template, and applicability revisions in the dependency ledger. Both legal changes and site/process changes invalidate affected generated sections; outputs retain derivative lineage and cannot prove their own source obligations. DB-031–DB-035 in the [backlog](./coding_tasks.md) define this extension; the ontology examples below remain illustrative and incomplete.
+Process documentation (Compliance Agent, Documentation Agent, site-specific policies and procedures) is a separate future application; see [process_pipeline_future](../plans/process_pipeline_future/README.md).
 
 **Architecture Reference:** [rag_architecture.md](./rag_architecture.md)  
 **Upstream Input:** [rag_parse.md](./rag_parse.md) (Parsed & Normalized Assertions)  
@@ -225,7 +223,7 @@ When a revised standard is ingested, changes are classified into three impact ca
 | Change Class | Definition | Example | Pipeline Action |
 | :--- | :--- | :--- | :--- |
 | **`NON_BREAKING`** | Editorial clarifications or wording tweaks with identical obligations. | Wording typo corrected; guidance note added. | Update Document $\to$ Concept mapping. Downstream verified. |
-| **`DEPRECATION`** | Clause renumbered or slated for retirement with a transition period. | ISO 27001:2013 A.9.4.2 replaced by 2022 5.17. | Add `DEPRECATED_BY` edge. Rules remain active until sunset date. |
+| **`DEPRECATION`** | Clause renumbered or slated for retirement with a transition period. | ISO 27001:2013 A.9.4.2 replaced by 2022 5.17. | Add `DEPRECATED_BY` edge. Requirements remain active until sunset date. |
 | **`BREAKING`** | Modality shift (`SHOULD` $\to$ `MUST`), tightened thresholds, or new obligations. | MFA made mandatory for all internal consoles; timeout reduced to 15m. | Create new Concept/Requirement version. **Trigger Impact Traversal.** |
 
 ### 5.4 Automated Impact Traversal Query
@@ -247,4 +245,3 @@ RETURN concept.id, req.id, ctrl.id, wf.id
    - List of affected Controls, Risks, and Operational SOPs.
    - Recommended procedural updates.
 3. **No operational workflow or control is automatically changed in production without human compliance officer sign-off.**
-4. Generated document packages with changed dependencies become `needs_review`; retain previous content, surface affected sections and a proposed diff, and obtain site/process plus compliance review (and competent technical review for safety-critical content). Do not silently update `assets/publish`, replace human edits, or continue to present stale packages as current validated guidance. Review and export use the shared registry contracts in the implementation plan.

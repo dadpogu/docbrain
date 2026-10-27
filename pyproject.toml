@@ -1,7 +1,7 @@
 [project]
 name = "docbrain"
 version = "0.1.0"
-description = "Compliance-focused, version-aware regulatory knowledge and site documentation system"
+description = "Compliance-focused, version-aware regulatory knowledge system"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

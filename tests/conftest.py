@@ -15,7 +15,7 @@ from docbrain.registry import Registry
 REPO = Path(__file__).resolve().parents[1]
 ASSETS = REPO / "assets"
 EARLIER_MD = ASSETS / "parsed" / "GLOBAL.AU" / "C2020A00119-recycling-and-waste-reduction-act-2020.md"
-LITEPARSE_MD = ASSETS / "parsed" / "GLOBAL.AU" / "C2026C00317.md"
+LITEPARSE_MD = ASSETS / "parsed" / "Sample" / "C2020A00119_Liteparse.md"
 RAW_DIR = ASSETS / "raw" / "GLOBAL.AU" / "Recycling and Waste Reduction Act 2020"
 SIDECAR_JSON = RAW_DIR / "C2026C00317.json"
 FIXTURES = REPO / "tests" / "fixtures"

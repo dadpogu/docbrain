@@ -43,7 +43,7 @@
     },
     {
       "id": "LITE",
-      "path": "assets/parsed/GLOBAL.AU/C2026C00317.md",
+      "path": "assets/parsed/Sample/C2020A00119_Liteparse.md",
       "role": "imported_rendering",
       "media_type": "text/markdown",
       "status": "candidate rendering; not ground truth",

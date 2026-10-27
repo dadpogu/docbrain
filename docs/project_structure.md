@@ -1,6 +1,6 @@
 # Docbrain Project Structure
 
-See the [implementation plan](./implementation_plan.md) for delivery phases and contracts, and the [coding backlog](./coding_tasks.md) for source-driven tasks and acceptance cases. The current repository contains reference code, parsed legislation, and a raw Recycling Act example; the target layout below is a plan, not a list of implemented components.
+See the [implementation plan](../plans/implementation_plan.md) for delivery phases and contracts, and the [coding backlog](../plans/coding_tasks.md) for source-driven tasks and acceptance cases. The current repository contains reference code, parsed legislation, and a raw Recycling Act example; the target layout below is a plan, not a list of implemented components.
 
 ## Current layout
 
@@ -11,23 +11,31 @@ graph TD
     docbrain --> src
     docbrain --> tests
     docbrain --> evals
+    docbrain --> plans
     src --> pkg[docbrain package]
     assets --> raw
     assets --> parsed
     assets --> cleaned
+    raw --> scope["scope folders: GLOBAL, GLOBAL.AU, GLOBAL.AU.VIC, GLOBAL.AU.VIC.AUWOD"]
+    parsed --> scope
+    cleaned --> scope
+    parsed --> Sample
 ```
 
-- `/src/docbrain` Installable package (`pyproject.toml`, `uv.lock`): prototype modules plus offline domain models, Markdown parsing, references, registry, templates, and workflow logic. See the implementation status in the [coding backlog](./coding_tasks.md#implementation-status).
+- `/src/docbrain` Installable package (`pyproject.toml`, `uv.lock`): prototype modules plus offline domain models, Markdown parsing, references, registry, and workflow logic. See the implementation status in the [coding backlog](../plans/coding_tasks.md#implementation-status).
 - `/tests` Offline unit tests and reviewed fixtures. Run `uv sync`, then `uv run pytest`, `uv run ruff check src tests`, and `uv run mypy`.
 - `/evals` Structured evaluation cases (Recycling Act E01–E20).
-- `/assets/raw` PDF, DOCX, HTML original documents stored in folders with json metadata sidecar.
-- `/assets/parsed` Text, Markdown, JSON documents after parsing original documents.
-- `/assets/cleaned` Manually cleaned documents after parsing.
-- `/assets/publish` Supplied draft process/work-instruction/form examples and the target root for controlled Documentation Agent exports. Presence here is not approval; preserve existing files and register any reference input explicitly.
+- `/assets/raw/<scope>` PDF, DOCX, HTML original documents stored in folders with json metadata sidecar.
+- `/assets/parsed/<scope>` Text, Markdown, JSON documents after parsing original documents.
+- `/assets/parsed/Sample` The two candidate renderings of the Recycling Act used for parser comparison.
+- `/assets/cleaned/<scope>` Manually cleaned documents after parsing.
 - `/docs` Markdown documentation for humans and agents.
+- `/plans` Implementation plan, coding backlog, and the future process application ([process_pipeline_future](../plans/process_pipeline_future/README.md)).
 - `/src` Scripts, Source Code
 
-`assets/parsed/GLOBAL.AU` contains eight Markdown files representing seven Acts. The Recycling Act has two candidate renderings of compilation `C2026C00317`: the earlier structured `C2020A00119-recycling-and-waste-reduction-act-2020.md` and the supplied LiteParse export `C2026C00317.md`. Keep them as separate derivations, not separate legal versions or duplicate corroborating evidence. `assets/raw/GLOBAL.AU/Recycling and Waste Reduction Act 2020` contains `C2026C00317.pdf` and its JSON metadata sidecar for the first source-driven implementation example. The [coding backlog](./coding_tasks.md) records comparison findings and parser-quality gates. `cleaned` remains a lifecycle convention, not evidence that approved corrections are available. Preserve source bytes; cleaned documents become versioned derived artifacts with provenance.
+`<scope>` is a dotted scope code: `GLOBAL`, `GLOBAL.AU`, `GLOBAL.AU.VIC`, or `GLOBAL.AU.VIC.AUWOD` (Wodonga). A location scope inherits every ancestor scope by dotted segment. Scope is a necessary filter, not proof of applicability; applicability conditions are defined by the regulatory pipeline.
+
+`assets/parsed/GLOBAL.AU` contains seven Markdown files, one per Act. `assets/parsed/Sample` holds the two candidate renderings of the Recycling Act compilation `C2026C00317`: `C2020A00119_LawCodex.md`, the earlier structured Markdown (the same bytes as `assets/parsed/GLOBAL.AU/C2020A00119-recycling-and-waste-reduction-act-2020.md`), and `C2020A00119_Liteparse.md`, the supplied LiteParse export (formerly `assets/parsed/GLOBAL.AU/C2026C00317.md`). Keep them as separate derivations, not separate legal versions or duplicate corroborating evidence. `assets/raw/GLOBAL.AU/Recycling and Waste Reduction Act 2020` contains `C2026C00317.pdf` and its JSON metadata sidecar for the first source-driven implementation example. The [coding backlog](../plans/coding_tasks.md) records comparison findings and parser-quality gates. The human approval step between parsed and cleaned is paused: outputs from multiple parsers will be compared, and if one is good enough, the manual correction step is removed. `cleaned` remains a lifecycle folder, not evidence that approved corrections are available. Preserve source bytes; cleaned documents become versioned derived artifacts with provenance.
 
 ## Target application layout
 
@@ -51,7 +59,6 @@ src/docbrain/
 ├── semantic_tree.py            # document/corpus summaries and dependencies
 ├── graph_engine.py             # typed extraction, resolution, graph semantics
 ├── lifecycle.py                # publication, invalidation, retention, reconciliation
-├── documentation.py            # package validation, rendering, controlled export
 ├── adapters/
 │   ├── models.py               # LiteLLM integration and role aliases
 │   ├── parser.py               # selected Docling/LiteParse service adapter
@@ -61,8 +68,7 @@ src/docbrain/
 ├── workflows/
 │   ├── ingestion.py            # resumable LangGraph ingestion
 │   ├── answering.py            # bounded corrective retrieval and verification
-│   ├── change_review.py        # version comparison, impact, shared human approval
-│   └── documentation.py        # site applicability, outline, sections, package review
+│   └── change_review.py        # version comparison, impact, shared human approval
 └── prompts/                    # versioned extraction/synthesis/review prompts
 migrations/                     # explicit Postgres, Qdrant, Memgraph schema changes
 tests/
@@ -71,27 +77,12 @@ tests/
 ├── integration/                # public API and recovery scenarios
 └── fixtures/                   # small, redistributable source/expected-span fixtures
 evals/                          # reviewed questions, runner, retrieval ablations
-docs/                           # architecture, stage guidance, plan, operations
+docs/                           # architecture, stage guidance, operations
+plans/                          # implementation plan, coding backlog, future process application
 assets/                         # curated corpus, not production state/checkpoints
 ```
 
-## Planned documentation inputs and export layout
-
-Process and site inputs use the existing raw → parsed → reviewed-derived lifecycle with metadata for tenant/site/process, source role, revision, and review state; authority is not inferred from a directory. Existing files in `assets/publish` are not moved or overwritten. P-001 and WI-007 are draft reference examples; template example values are not approved plant facts. Obtain authoritative site/permit/equipment inputs and approved policy/manual templates before operational publication.
-
-```text
-assets/publish/<tenant-id>/<site-id>/<package-id>/<revision>/
-├── manifest.json               # file hashes, scope, revisions, status, dependencies
-├── evidence.json               # section → obligation/control/source span mappings
-├── review.md                   # reviewer decisions, gaps, change rationale
-├── policies/                   # organizational commitments and accountabilities
-├── manuals/                    # management system and controlled procedure links
-├── procedures/                 # supported roles, steps, prerequisites, hold points
-├── work-instructions/          # optional requested supporting detail
-└── forms/                      # optional blank templates, never invented records
-```
-
-Markdown is the initial export format. Server-issued IDs determine paths; package creation/status/export/download share API/CLI application functions. A staged complete package is made current only after authorized review and a registry publication check. Draft exports are labelled not for operational use and use immutable identities distinct from approved exports. Keep source and approval lineage with every revision; dependency changes mark it needs-review. Do not recursively ingest output or serve the root publicly. In shared deployments, use private managed artifact storage with the same logical layout; local files are review/export artifacts, not the job/checkpoint database. See DB-031–DB-035 in the [coding backlog](./coding_tasks.md).
+`documentation.py` and `workflows/documentation.py` are no longer DocBrain modules; they moved to `plans/process_pipeline_future/code/src/docbrain/`. Process documentation (Compliance Agent, Documentation Agent, site-specific policies and procedures) is a separate future application; see [process_pipeline_future](../plans/process_pipeline_future/README.md).
 
 ## Existing code migration map
 

@@ -50,7 +50,7 @@
       "role": "imported_rendering",
       "media_type": "text/markdown",
       "relation": "liteparse_markdown_candidate",
-      "path": "assets/parsed/GLOBAL.AU/C2026C00317.md",
+      "path": "assets/parsed/Sample/C2020A00119_Liteparse.md",
       "derivation": {"method": "liteparse_export", "tool": "LiteParse", "attribution": "user-supplied attribution; version and options unknown"}
     }
   ],

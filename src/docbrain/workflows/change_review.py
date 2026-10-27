@@ -1,4 +1,4 @@
-"""Shared human-approval contract (DB-025), reused by Documentation Agent packages (DB-033/034).
+"""Shared human-approval contract (DB-025).
 
 A decision binds the exact proposal revision, content hash, and dependency hash the reviewer saw.
 Reviewers come from the trusted :class:`RequestContext`, never from tool or model input. The
